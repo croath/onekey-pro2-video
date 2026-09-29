@@ -1,10 +1,10 @@
-"""Soundtrack analysis -> data/audio.json (beats, downbeats, sections, onsets, envelopes).
+"""Soundtrack analysis -> data/full/audio.json (beats, downbeats, sections, onsets, envelopes).
 
 librosa only (no neural models), so it runs anywhere pip works. Stems are approximated:
 drums/bass from harmonic-percussive separation, vocal from librosa's REPET-SIM foreground
 mask. Good enough to drive motion; for word timings see align_lyrics (needs models).
 
-Run:  python3 analysis/analyze_audio.py [audio/track.wav] [--sections=t1,t2,...] [--names=intro,verse1,...]
+Run:  python3 analysis/analyze_audio.py [audio/full/track.wav] [--sections=t1,t2,...] [--names=intro,verse1,...]
                                           [--vocals=analysis/stems/htdemucs_ft/track/vocals.wav]
 --sections/--names: section boundaries and labels (from the lyric alignment); --vocals: a separated vocal
 stem (Demucs) for the vocal envelope and onsets instead of the REPET-SIM estimate.
@@ -21,7 +21,7 @@ FPS = 100
 HOP = SR // FPS  # envelope hop: 10 ms (220.5 -> 220 samples, corrected below)
 
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
-path = args[0] if args else 'audio/track.wav'
+path = args[0] if args else 'audio/full/track.wav'
 opt = {a.split('=')[0]: a.split('=')[1] for a in sys.argv[1:] if a.startswith('--') and '=' in a}
 
 y, _ = librosa.load(path, sr=SR, mono=True)
@@ -160,7 +160,7 @@ out = {
               '(HPSS for drums/bass' + (', Demucs htdemucs_ft stem for vocal).' if '--vocals' in opt else
                                         ', REPET-SIM foreground for vocal).')),
 }
-json.dump(out, open('data/audio.json', 'w'))
+json.dump(out, open('data/full/audio.json', 'w'))
 print(f'duration {dur:.1f}s, {len(beats)} beats, median {bpm:.2f} BPM, downbeat phase {phase}, '
       f'{len(downbeats)} bars, {len(sections)} sections, kicks {len(kick)} snares {len(snare)} hats {len(hat)} vocal {len(vocal_on)}')
 for s in sections:

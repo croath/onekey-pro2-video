@@ -1,4 +1,4 @@
-"""Forced alignment of the sung lyrics -> data/lyrics.json (word-level, engine format).
+"""Forced alignment of the sung lyrics -> data/full/lyrics.json (word-level, engine format).
 
 Input: analysis/sung_lyrics.txt (the lyrics as actually sung: sections, search windows, optional
 alternatives and manual line starts) and the Demucs vocal stem.
@@ -253,7 +253,7 @@ lines_out = [{'text': l['text'], 'start': r3(l['start']), 'end': r3(l['end']),
               'words': [{'w': w['w'], 'start': r3(w['start']), 'end': r3(w['end']), 'conf': round(w['conf'], 3)}
                         for w in l['words']]} for l in result]
 json.dump({'lines': lines_out,
-           'notes': 'Word timings for audio/track.wav (seconds from file start). Vocals separated with Demucs '
+           'notes': 'Word timings for audio/full/track.wav (seconds from file start). Vocals separated with Demucs '
                     'htdemucs_ft; lyrics as actually sung (analysis/sung_lyrics.txt, reconciled from Whisper '
                     'large-v3 against docs/SONG.md) force-aligned by CTC (torchaudio forced_align, '
                     f'{"MMS_FA" if MODEL == "mms" else "wav2vec2 LV-60k 960h"}, 20 ms frames), per line, with '
@@ -263,7 +263,7 @@ json.dump({'lines': lines_out,
                     'the word\'s characters (sung vowels score low; < 0.1 is worth a look). Wordless vocals '
                     '(intro 5.5-16.5 s, pad before chorus 2, 147-164 s) are not lines. '
                     'Regenerate: analysis/align_lyrics.py.'},
-          open('data/lyrics.json', 'w'), indent=1)
+          open('data/full/lyrics.json', 'w'), indent=1)
 
 print('\n'.join(report))
 for l in result:

@@ -9,7 +9,7 @@
 
 ## 基本参数
 
-- 时长：约 2:00（歌曲 64 小节 @ 120 BPM ≈ 2:08，见 SONG.md）
+- 时长：**2:22.8**（Suno 原曲 3:01，剪掉无词段落后的版本，见 SONG.md 的"The take we use, and the edit"）
 - 画幅：1920×1080 / 60 fps，可出 4K（`--scale 2`）
 - 声音：Suno 生成的歌（英文），歌词逐词同步成画面里的字
 - 语言：英文歌词与画面文字；中文版以后按同样结构另做
@@ -74,21 +74,21 @@
 
 ## 图版（场景模块）
 
-时间是按 120 BPM 估的，最终以 `src/timeline.ts` 为准（按歌词行定位、吸附到节拍网格）。不要在场景里硬编码时间。
+时间是剪辑版里的实际时间（约 126 BPM，微微加速），最终以 `src/timeline.ts` 为准（按歌词行定位、吸附到节拍网格）。不要在场景里硬编码时间。
 
 | id | 时间窗 | 歌词 | 卖点 | 负责 |
 |---|---|---|---|---|
 | `boot` | 0:00–0:08 | （前奏） | 品牌 | lead |
-| `slab` | 0:08–0:24 | Glass on the front… / …catching the light | 更优雅的设计 | A1 |
-| `below` | 0:24–0:32 | Quiet by design… / …stays down below | 设计→安全 | A1 |
-| `airgap` | 0:32–0:40 | Scan it, sign it, send it… / …plain type | 气隙二维码签名、明文签名 | A2 |
-| `hook` ×2 | 0:40–0:56，1:44–2:00 | Keep your keys at home… | 私钥不出设备 | A3 |
-| `vault` | 0:56–1:04 | Four secure elements… / …don't have to trust | 4 颗 EAL 6+ 安全芯片 | A4 |
-| `lens` | 1:04–1:12 | A camera on the back… / …nothing online | 气隙 | A2 |
-| `guard` | 1:12–1:20 | The contract says "approve all"… / …hex on a plate | SignGuard、明文签名 | A5 |
-| `touch` | 1:20–1:28 | Touch to unlock it… / …wipes itself to dust | 指纹、PIN、错误自毁 | A4 |
-| `passkey` | 1:28–1:44 | It's not just your coins… / …no phishing link tonight | **FIDO 与 Passkey** | A6 |
-| `end` | 2:00–2:08 | OneKey Pro 2 | 片名 | lead |
+| `slab` | 0:08–0:28 | Glass on the front… / …catching the light | 更优雅的设计 | A1 |
+| `below` | 0:28–0:40 | Quiet by design… / …stays down below | 设计→安全 | A1 |
+| `airgap` | 0:40–0:48 | Scan it, sign it, send it… / …plain type | 气隙二维码签名、明文签名 | A2 |
+| `hook` ×2 | 0:48–1:07，1:51–2:11 | Keep your keys at home… | 私钥不出设备 | A3 |
+| `vault` | 1:07–1:14 | Four secure elements… / …don't have to trust | 4 颗 EAL 6+ 安全芯片 | A4 |
+| `lens` | 1:14–1:22 | A camera on the back… / …nothing online | 气隙 | A2 |
+| `guard` | 1:22–1:29 | The contract says "approve all"… / …hex on a plate | SignGuard、明文签名 | A5 |
+| `touch` | 1:29–1:37 | Touch to unlock it… / …wipes itself to dust | 指纹、PIN、错误自毁 | A4 |
+| `passkey` | 1:37–1:51 | It's not just your coins… / …no phishing link tonight | **FIDO 与 Passkey** | A6 |
+| `end` | 2:11–2:23 | OneKey Pro 2 | 片名 | lead |
 
 ### `boot` — "开机"
 全黑。第一拍，画面中央亮起一粒绿点，像待机灯，随底鼓呼吸。第二小节，它拖着发丝线，用单线字体笔画写出"1"（一个短横加一竖），落笔在强拍；第三小节画出"O"。第四小节，"O"的外圈长出一圈金属高光，变成摄像头环，镜头拉远，这是设备背面左上角的摄像头；在强拍上硬切到 `slab`。
@@ -137,7 +137,7 @@ ink 底，光学图风格。背面摄像头环放大成一个光圈，光线（�
 
 - [x] 参考照片（`assets/reference/`，NDA）
 - [x] Logo 与品牌绿（`assets/brand/`）
-- [ ] 歌曲 WAV（和人声分轨，如果有）：按 `SONG.md` 在 Suno 生成
+- [x] 歌曲：Suno 原曲 `audio/full/track.wav`，剪辑版 `audio/track.wav`，逐词时间轴 `data/lyrics.json`
 - [ ] 待确认的 Pro 2 规格（见下）
 
 ## 待确认（上市前向 OneKey 核实）
@@ -151,4 +151,5 @@ ink 底，光学图风格。背面摄像头环放大成一个光圈，光线（�
 ## 修订记录
 
 - rev 1：初始模板。
+- rev 3（2026-09-29）：接入真实歌曲，按剪辑版（2:22.8）更新各图版时间窗；歌里唱的是 "Contract says…"（没有 The）。
 - rev 2（2026-09-29）：完整初稿，包括概念、配色（OneKey 绿）、根据照片写的设备描述、11 幅图版，对应 SONG.md 的歌曲结构。

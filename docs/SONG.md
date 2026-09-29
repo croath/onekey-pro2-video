@@ -83,7 +83,7 @@ OneKey Pro 2
 [end on a clean hit, no fade]
 ```
 
-## Structure and timing (at 120 BPM)
+## Planned structure (at 120 BPM; see the edit above for the real times)
 
 | section | bars | time | plates (see TREATMENT.md) |
 |---|---|---|---|
@@ -97,6 +97,27 @@ OneKey Pro 2
 | Outro | 4 | 2:00–2:08 | `end` |
 
 Suno won't hit these bars exactly; the edit follows the real track once it is analysed.
+
+## The take we use, and the edit
+
+Suno's take runs 3:01 at a tempo that drifts from about 123 to 128 BPM (median 126.5). Every lyric line is sung once, in order; "The contract says" is sung as "Contract says". The extra length is wordless: vocal chops in the intro, a "Hold it, sign it, go" echo after chorus 1, an "ooh" lift before chorus 2, and an 18 s break before the outro.
+
+- Full take: `audio/full/track.wav`, analysis in `data/full/` (word timings from `analysis/align_lyrics.py`, run on Croath's Mac because the cloud container cannot download the speech models).
+- Edit: `analysis/cut_track.py` keeps four downbeat-aligned regions and writes `audio/track.wav`, `data/lyrics.json`, `data/audio.json` (**2:22.8**). Removed: the first half of the intro, the echo, most of the lift and the break.
+
+| section | edit time | source time |
+|---|---|---|
+| intro | 0:00.0–0:08.1 | 10.4–18.6 |
+| verse 1 | 0:08.1–0:40.0 | 18.6–50.4 |
+| pre-chorus | 0:40.0–0:48.2 | 50.4–58.6 |
+| chorus 1 | 0:48.2–1:05.4 | 58.6–75.9 |
+| (pickup) | 1:05.4–1:06.8 | 79.7–81.0 |
+| verse 2 | 1:06.8–1:36.9 | 81.0–111.1 |
+| bridge | 1:36.9–1:50.9 | 111.1–125.1 |
+| (lift) | 1:50.9–1:52.7 | 128.9–130.7 |
+| chorus 2 | 1:52.7–2:09.7 | 130.7–147.7 |
+| (pickup) | 2:09.7–2:11.3 | 164.6–166.2 |
+| outro | 2:11.3–2:22.8 | 166.2–177.7, faded |
 
 ## Generating it
 

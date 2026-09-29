@@ -2,13 +2,13 @@
 
 A code-rendered product video for OneKey Pro 2. The renderer is adapted from [croath/pdoom-video](https://github.com/croath/pdoom-video) (MIT): every frame is a deterministic function of time, so the live preview and the 1080p60 / 4K60 export are identical.
 
-Status: scaffold. The engine works end to end with placeholder data and one starter scene; the concept and plates are being written in [`docs/TREATMENT.md`](docs/TREATMENT.md).
+Status: soundtrack and timings done; plates to build. The concept and plates are in [`docs/TREATMENT.md`](docs/TREATMENT.md); only the starter `title` scene exists so far.
 
 ## Layout
 
-- `audio/track.wav` — soundtrack (placeholder: 60 s, 120 BPM click).
-- `data/audio.json` — beats, downbeats, sections, onsets, loudness envelopes (placeholder, synthetic).
-- `data/lyrics.json` — captions / voice-over, word-timed (placeholder copy).
+- `audio/track.wav` — the soundtrack as edited (2:22.8); `audio/full/track.wav` — the full Suno take (3:01). See [`docs/SONG.md`](docs/SONG.md).
+- `data/lyrics.json`, `data/audio.json` — word-level lyric timings and the music analysis (beats, downbeats, sections, onsets, envelopes) for the edit; `data/full/` — the same for the full take.
+- `analysis/` — `analyze_audio.py` (librosa), `transcribe_vocals.py` + `align_lyrics.py` (Demucs, Whisper, CTC alignment; need the models, see their headers), `cut_track.py` (makes the edit).
 - `app/src/engine/` — renderer core (post, typography, GPU lines, timing). See [`docs/ENGINE.md`](docs/ENGINE.md).
 - `app/src/scenes/` — one module per plate. `app/src/timeline.ts` — the edit.
 - `app/scripts/render.ts` — offline renderer (headless Chrome → ffmpeg).

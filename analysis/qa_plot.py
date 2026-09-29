@@ -1,6 +1,6 @@
 """QA: vocal-stem spectrogram with the aligned word starts (green) and Whisper's (cyan, dashed).
 
-Used to check data/lyrics.json by eye and to pick manual @line starts in analysis/sung_lyrics.txt.
+Used to check data/full/lyrics.json by eye and to pick manual @line starts in analysis/sung_lyrics.txt.
 Run:  analysis/.venv/bin/python analysis/qa_plot.py t0 t1   -> analysis/qa/spec_<t0>.png
 """
 import glob
@@ -29,7 +29,7 @@ for w in wh:
     if t0 < w['start'] < t1:
         ax.axvline(w['start'] - t0, color='cyan', lw=1, ls='--')
         ax.text(w['start'] - t0, 2900, w['w'], color='cyan', fontsize=8, rotation=90, va='top')
-for l in json.load(open('data/lyrics.json'))['lines']:
+for l in json.load(open('data/full/lyrics.json'))['lines']:
     for w in l['words']:
         if t0 < w['start'] < t1:
             ax.axvline(w['start'] - t0, color='lime', lw=1.2)
