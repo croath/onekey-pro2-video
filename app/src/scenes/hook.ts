@@ -102,6 +102,7 @@ export default class Hook extends Scene {
     if (kind === 'keep') {
       const w = current(line);
       const home = line.words[line.words.length - 1]!;
+      if (!w) keyDot(W / 2, H / 2, 0.8); // before the first hit: only the key, carried over from the last plate
       if (w && w !== home) slam(w, w.w.replace(/[^A-Za-z]/g, '').toUpperCase());
       if (w === home) {
         // HOME slams, then the outline of the device draws round it and it shrinks inside
