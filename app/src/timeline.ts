@@ -18,12 +18,13 @@ export function makeTimeline(ly: Lyrics, au: AudioData): TimelineEntry[] {
     const s = ly.get(q, nth).words[0]!.start;
     return au.timeOfBeat(Math.floor(au.beatAt(s + tol)));
   };
-  void cut; // used once there is more than one scene
 
   const E = (id: string, file: string, start: number, end: number, extra: Partial<TimelineEntry> = {}): TimelineEntry =>
     ({ id, load: scene(file), start, end, ...extra });
 
   return [
-    E('title', 'title', 0, au.duration),
+    E('boot', 'boot', 0, cut('Glass on the front')),
+    E('slab', 'slab', cut('Glass on the front'), cut('Quiet by design')),
+    E('title', 'title', cut('Quiet by design'), au.duration),
   ];
 }

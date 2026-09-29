@@ -153,12 +153,12 @@ float engrave(vec2 uv, float darkness, float freq, float angle) {
 // ---- colour ----
 vec3 toSRGB(vec3 c) { return mix(12.92 * c, 1.055 * pow(max(c, 0.0), vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
 vec3 toLinear(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c)); }
-/** Signal-orange heat ramp: 0 = ink, 0.5 = signal, 1 = white-hot. */
+/** Signal heat ramp (OneKey green): 0 = ink, 0.5 = signal, 1 = white-hot. */
 vec3 heat(float x) {
   x = sat(x);
   vec3 c = mix(C_INK, C_BLOOD, smoothstep(0.0, 0.3, x));
   c = mix(c, C_SIGNAL, smoothstep(0.25, 0.55, x));
   c = mix(c, C_EMBER, smoothstep(0.55, 0.8, x));
-  return mix(c, vec3(1.0, 0.93, 0.85), smoothstep(0.8, 1.0, x));
+  return mix(c, vec3(0.92, 1.0, 0.9), smoothstep(0.8, 1.0, x));
 }
 `;
