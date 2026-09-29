@@ -19,6 +19,12 @@ export function makeTimeline(ly: Lyrics, au: AudioData): TimelineEntry[] {
     return au.timeOfBeat(Math.floor(au.beatAt(s + tol)));
   };
 
+  /** Cut on the beat at/before word `wi` of the matching line (for lines that open on a pickup). */
+  const cutWord = (q: string, wi: number, nth = 0) => {
+    const s = ly.get(q, nth).words[wi]!.start;
+    return au.timeOfBeat(Math.floor(au.beatAt(s + 0.02)));
+  };
+
   const E = (id: string, file: string, start: number, end: number, extra: Partial<TimelineEntry> = {}): TimelineEntry =>
     ({ id, load: scene(file), start, end, ...extra });
 
@@ -28,8 +34,12 @@ export function makeTimeline(ly: Lyrics, au: AudioData): TimelineEntry[] {
     E('below', 'below', cut('Quiet by design'), cut('Scan it')),
     E('airgap', 'airgap', cut('Scan it'), cut('Keep your keys at home')),
     E('hook1', 'hook', cut('Keep your keys at home'), cut('Four secure elements'), { params: { n: 1 } }),
-    E('title', 'title', cut('Four secure elements'), cut('Keep your keys at home', 1)),
+    E('vault', 'vault', cut('Four secure elements'), cutWord('A camera on the back', 1)), // "A" is a pickup: let "trust" land first
+    E('lens', 'lens', cutWord('A camera on the back', 1), cut('Contract says')),
+    E('guard', 'guard', cut('Contract says'), cut('Touch to unlock')),
+    E('touch', 'touch', cut('Touch to unlock'), cut("It's not just your coins")),
+    E('passkey', 'passkey', cut("It's not just your coins"), cut('Keep your keys at home', 1)),
     E('hook2', 'hook', cut('Keep your keys at home', 1), cut('OneKey Pro 2'), { params: { n: 2 } }),
-    E('end', 'title', cut('OneKey Pro 2'), au.duration),
+    E('end', 'end', cut('OneKey Pro 2'), au.duration),
   ];
 }

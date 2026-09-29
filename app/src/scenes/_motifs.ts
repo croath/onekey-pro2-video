@@ -194,3 +194,41 @@ export function qrMatrix(seed = 1, n = 25): boolean[][] {
   }
   return m;
 }
+
+// ---------------------------------------------------------------- paper
+/** Bone blueprint paper: fill and a faint 48 px grid (used by the paper plates). */
+export function paper(c: CanvasRenderingContext2D, W: number, H: number, ox = 0, oy = 12) {
+  c.fillStyle = rgba('bone');
+  c.fillRect(0, 0, W, H);
+  c.strokeStyle = rgba('ash', 0.18);
+  c.lineWidth = 1;
+  c.beginPath();
+  for (let x = ox; x < W; x += 48) { c.moveTo(x, 0); c.lineTo(x, H); }
+  for (let y = oy; y < H; y += 48) { c.moveTo(0, y); c.lineTo(W, y); }
+  c.stroke();
+}
+
+/** A chip in line drawing: square package with pins on four sides, a die, a label. */
+export function chip(c: CanvasRenderingContext2D, cx: number, cy: number, s: number, label: string, col: string, bg: string) {
+  c.fillStyle = bg;
+  c.fillRect(cx - s / 2, cy - s / 2, s, s);
+  c.strokeStyle = col;
+  c.lineWidth = 1.6;
+  c.strokeRect(cx - s / 2, cy - s / 2, s, s);
+  c.lineWidth = 1;
+  const np = 8, L = s * 0.09;
+  c.beginPath();
+  for (let i = 0; i < np; i++) {
+    const u = -s / 2 + (s * (i + 0.5)) / np;
+    c.moveTo(cx + u, cy - s / 2); c.lineTo(cx + u, cy - s / 2 - L);
+    c.moveTo(cx + u, cy + s / 2); c.lineTo(cx + u, cy + s / 2 + L);
+    c.moveTo(cx - s / 2, cy + u); c.lineTo(cx - s / 2 - L, cy + u);
+    c.moveTo(cx + s / 2, cy + u); c.lineTo(cx + s / 2 + L, cy + u);
+  }
+  c.stroke();
+  c.strokeRect(cx - s * 0.22, cy - s * 0.22, s * 0.44, s * 0.44);
+  c.beginPath(); c.arc(cx - s / 2 + s * 0.1, cy - s / 2 + s * 0.1, s * 0.025, 0, TAU); c.stroke();
+  c.fillStyle = col;
+  c.font = font('Plex-500', Math.round(s * 0.1));
+  c.fillText(label, cx - s / 2 + s * 0.08, cy + s / 2 - s * 0.08);
+}
