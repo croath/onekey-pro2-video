@@ -27,6 +27,9 @@ export function makeTimeline(ly: Lyrics, au: AudioData): TimelineEntry[] {
     E('slab', 'slab', cut('Glass on the front'), cut('Quiet by design')),
     E('below', 'below', cut('Quiet by design'), cut('Scan it')),
     E('airgap', 'airgap', cut('Scan it'), cut('Keep your keys at home')),
-    E('title', 'title', cut('Keep your keys at home'), au.duration),
+    E('hook1', 'hook', cut('Keep your keys at home'), cut('Four secure elements'), { params: { n: 1 } }),
+    E('title', 'title', cut('Four secure elements'), cut('Keep your keys at home', 1)),
+    E('hook2', 'hook', cut('Keep your keys at home', 1), cut('OneKey Pro 2'), { params: { n: 2 } }),
+    E('end', 'title', cut('OneKey Pro 2'), au.duration),
   ];
 }
