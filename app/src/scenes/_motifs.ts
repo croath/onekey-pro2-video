@@ -5,7 +5,9 @@
 // Read-only for scene agents; ask the lead for changes.
 import { LineBatch } from '../engine/lines';
 import { LIN, rgba } from '../engine/palette';
-import { hash, TAU } from '../engine/util';
+import { clamp, ease, hash, TAU } from '../engine/util';
+import { font, layout } from '../engine/type';
+import { Lyrics, type Line } from '../engine/lyrics';
 
 type P2 = { x: number; y: number };
 
@@ -115,9 +117,9 @@ export function keyMarkPath(cx: number, cy: number, h: number): Path2D {
  */
 export const DEVICE = {
   w: 1,
-  h: 1.56,
-  /** total thickness */
-  t: 0.15,
+  h: 1.599, // 53.1 x 84.9 x 6.2 mm (Croath, 2026-09-29)
+  /** total thickness: 6.2 mm / 53.1 mm */
+  t: 0.1168,
   /** corner radius of the outline (big, card-like) */
   corner: 0.16,
   /** rear camera: centre (from the back, top-left) and ring radius */
@@ -125,3 +127,70 @@ export const DEVICE = {
   /** key mark on the back: centre and height */
   mark: { x: 0, y: 0.024, h: 0.14 },
 };
+
+/** The device's front outline (rounded rect) as a Path2D: centred at (cx, cy), `w` px wide. */
+export function devicePath(cx: number, cy: number, w: number): Path2D {
+  const h = w * DEVICE.h, p = new Path2D();
+  p.roundRect(cx - w / 2, cy - h / 2, w, h, DEVICE.corner * w);
+  return p;
+}
+/** Perimeter length of devicePath (for tracing it with a dash). */
+export function devicePerimeter(w: number): number {
+  const h = w * DEVICE.h, r = DEVICE.corner * w;
+  return 2 * (w - 2 * r) + 2 * (h - 2 * r) + TAU * r;
+}
+
+// ---------------------------------------------------------------- the sung line
+/**
+ * One lyric line set word by word (TREATMENT 歌词规则): sung words in `on`, the rest in `off`,
+ * each word lifting into place as it starts. Left-aligned at (x, baseline y).
+ */
+export function lyricLine(c: CanvasRenderingContext2D, line: Line, t: number, x: number, y: number, o: { family: string; size: number; on: string; off: string; alpha?: number }) {
+  const lay = layout(line.text, o.family, o.size);
+  c.font = font(o.family, o.size);
+  const A = o.alpha ?? 1;
+  let ci = 0;
+  for (const w of line.words) {
+    const k = Lyrics.wordProgress(w, t);
+    const i0 = line.text.indexOf(w.w, ci);
+    ci = i0 + w.w.length;
+    const g = lay.glyphs[i0];
+    if (!g) continue;
+    c.globalAlpha = A;
+    c.fillStyle = k > 0 ? o.on : o.off;
+    c.fillText(w.w, x + g.x, y - (k > 0 ? (1 - ease.outExpo(clamp(k * 4))) * 10 : 0));
+  }
+  c.globalAlpha = 1;
+  return lay.width;
+}
+
+// ---------------------------------------------------------------- QR codes
+/**
+ * A QR-looking module matrix (n x n, n = 25): real finder and timing patterns, hashed data modules.
+ * It encodes nothing (no real address or payload ever appears on screen).
+ */
+export function qrMatrix(seed = 1, n = 25): boolean[][] {
+  const m: boolean[][] = [];
+  const finder = (x: number, y: number) => {
+    for (const [fx, fy] of [[0, 0], [n - 7, 0], [0, n - 7]] as const) {
+      const u = x - fx, v = y - fy;
+      if (u >= -1 && u <= 7 && v >= -1 && v <= 7) {
+        if (u < 0 || v < 0 || u > 6 || v > 6) return 0; // quiet separator
+        const r = Math.max(Math.abs(u - 3), Math.abs(v - 3));
+        return r === 2 ? 0 : 1;
+      }
+    }
+    return -1;
+  };
+  for (let y = 0; y < n; y++) {
+    const row: boolean[] = [];
+    for (let x = 0; x < n; x++) {
+      const f = finder(x, y);
+      if (f >= 0) row.push(f === 1);
+      else if (y === 6 || x === 6) row.push((x + y) % 2 === 0);
+      else row.push(hash(x, y, seed) > 0.52);
+    }
+    m.push(row);
+  }
+  return m;
+}

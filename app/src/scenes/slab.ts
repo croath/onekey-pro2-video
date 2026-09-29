@@ -3,8 +3,8 @@
 //   1 "Glass on the front and glass on the back": front three-quarter, a highlight sweeps the
 //     black glass; on "back" the slab flips 180° about its long axis.
 //   2 "A ribbon of metal, graphite and black": macro along the metal frame; antenna breaks pass.
-//   3 "Thin as a card, it slips out of sight": dead side-on, the slab is a thin bar; on "out" it
-//     slides out of frame. (No card-for-scale overlay until the thickness is confirmed.)
+//   3 "Thin as a card, it slips out of sight": straight on the back, a bank card's outline slides over
+//     it (the same footprint); after "card" the slab turns side-on, a thin bar (6.2 mm); on "out" it slides away.
 //   4 "One little key mark catching the light": the back, head-on; a light sweeps the frosted
 //     glass and the "1O" mark glints green on "light".
 import type * as THREE from 'three';
@@ -25,7 +25,7 @@ const ringC = v2(-(KEY.ring.cx - KEY.centre.x) * MK - D.mark.x, -(KEY.ring.cy - 
 
 const FRAG = /* glsl */ `
 uniform vec3 camPos, camTgt;
-uniform float fov, theta, slideX, sweep, glint, time;
+uniform float fov, theta, slideX, sweep, glint, time, gain;
 const vec2 HALF = vec2(${(D.w / 2).toFixed(4)}, ${(D.h / 2).toFixed(4)});
 const float TH = ${(D.t / 2).toFixed(4)}, CORNER = ${D.corner.toFixed(4)}, RE = 0.028;
 
@@ -52,12 +52,19 @@ vec3 normalAt(vec3 p) {
   return normalize(vec3(map(p + e.xyy) - map(p - e.xyy), map(p + e.yxy) - map(p - e.yxy), map(p + e.yyx) - map(p - e.yyx)));
 }
 
-// studio: black room, one long softbox overhead-left, a thin rim strip right, a sweeping bar
+// studio: black room; a big top softbox, a tall strip left, a thin rim strip right, a sweeping bar,
+// and a faint floor/ceiling gradient so mirror surfaces always pick something up
 vec3 env(vec3 r) {
-  float top = smoothstep(0.55, 0.9, r.y) * smoothstep(-0.9, -0.2, r.x) * smoothstep(0.7, 0.2, abs(r.z + 0.1));
-  float rim = smoothstep(0.93, 0.99, r.x) * smoothstep(0.6, 0.1, abs(r.y));
-  float bar = exp(-pow((r.x - sweep) * 7.0, 2.0)) * smoothstep(-0.2, 0.4, r.z);
-  return vec3(0.9, 1.0, 0.95) * (top * 2.2 + rim * 1.4 + bar * 3.0) + C_INK * 0.4;
+  float top = smoothstep(0.5, 0.62, r.y) * smoothstep(0.75, 0.6, abs(r.x + 0.15)) * smoothstep(0.8, 0.6, abs(r.z + 0.05));
+  float left = smoothstep(-0.78, -0.86, r.x) * smoothstep(0.55, 0.45, abs(r.y - 0.1)) * smoothstep(-0.3, 0.1, r.z);
+  float rim = smoothstep(0.9, 0.95, r.x) * smoothstep(0.5, 0.35, abs(r.y));
+  float bar = smoothstep(0.09, 0.03, abs(r.x - sweep)) * smoothstep(-0.2, 0.3, r.z) * smoothstep(0.9, 0.5, abs(r.y));
+  // a large soft panel behind the camera, up-left, with one diagonal edge: what the glossy front
+  // mirrors when it faces us (a dark glass with a clean diagonal reflection)
+  float e = (r.x + 0.38) + (r.y + 0.08) * 1.3;
+  float panel = smoothstep(0.3, 0.6, r.z) * smoothstep(0.03, -0.03, e) * smoothstep(-0.9, -0.3, e) * smoothstep(-0.9, -0.4, r.x);
+  float amb = mix(0.012, 0.05, smoothstep(-0.6, 0.8, r.y));
+  return vec3(0.93, 1.0, 0.96) * (top * 3.0 + left * 1.6 + rim * 2.0 + bar * 3.5 + panel * 0.9 + amb);
 }
 
 float sdSeg(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0)); }
@@ -91,13 +98,13 @@ vec3 shade(vec3 pw, vec3 rd) {
   vec3 col;
   if (n.z > 0.75) {
     // front: black glass, a mirror of the studio
-    col = C_INK * 0.25 + env(r) * mix(0.14, 1.0, fres);
+    col = C_INK * 0.2 + env(r) * mix(0.09, 1.0, fres);
   } else if (n.z < -0.75) {
     // back: frosted glass, light grey at the top to graphite at the bottom, soft broad highlights
     float g = smoothstep(-HALF.y, HALF.y, p.y);
     vec3 base = mix(C_GRAPHITE * 0.35, C_ASH * 0.75, g * g);
-    vec3 blur = env(normalize(r + vec3(0.0, 0.0, 0.0))) * 0.08 + env(normalize(mix(r, nw, 0.6))) * 0.12;
-    col = base * (0.35 + 0.65 * max(dot(nw, normalize(vec3(-0.4, 0.8, 0.6))), 0.0)) + blur;
+    vec3 blur = env(normalize(mix(r, nw, 0.55))) * 0.1 + env(normalize(mix(r, nw, 0.8))) * 0.12;
+    col = base * (0.3 + 0.7 * max(dot(nw, normalize(vec3(-0.4, 0.8, 0.6))), 0.0)) + blur + env(r) * 0.03 * fres;
     col += 0.004 * snoise(p.xy * 900.0);
     // key mark, printed dark; glints green
     float dm = sdMark(p.xy);
@@ -114,10 +121,9 @@ vec3 shade(vec3 pw, vec3 rd) {
     col = mix(col, vec3(0.004) + env(r) * 0.3 * fres + vec3(0.02, 0.03, 0.025) * smoothstep(0.03, 0.0, length(p.xy - cc + 0.012)), lens);
   } else {
     // the frame: graphite metal, brushed along the edge, with antenna breaks, port and holes
-    vec3 base = C_GRAPHITE * 0.35;
-    vec3 aniso = env(normalize(r + vec3(0.0, 0.25 * sign(r.y), 0.0)));
-    col = base * 0.6 + aniso * (0.35 + 0.4 * fres) * vec3(0.85, 0.9, 0.88);
-    col *= 0.94 + 0.06 * sin(p.z * 2400.0);
+    // polished metal (graphite-tinted mirror, like a polished titanium band)
+    vec3 tintM = mix(C_GRAPHITE, C_BONE, 0.35);
+    col = tintM * 0.03 + env(r) * tintM * mix(0.4, 0.8, fres);
     // antenna breaks: thin dark bands across the frame near the corners
     float br = min(abs(abs(p.y) - 0.60), abs(abs(p.x) - 0.33) + step(0.1, HALF.y - abs(p.y)) * 9.0);
     col = mix(col, C_INK * 0.4, (1.0 - smoothstep(0.0025, 0.0045, br)) * step(abs(p.z), TH * 0.95));
@@ -155,16 +161,22 @@ void main() {
     t += d * 0.9;
     if (t > 30.0) break;
   }
-  if (hit) col = shade(camPos + rd * t, rd);
+  if (hit) col = shade(camPos + rd * t, rd) * gain;
   fragColor = vec4(col, 1.0);
 }`;
+
+/** Shot 3 (the card comparison) camera: straight on, long lens; px per device unit at the slab. */
+const SIDE = { cy: -0.25, dist: 11.5, fov: 0.22 };
+const SIDE_PPU = H / 2 / Math.tan(SIDE.fov / 2) / SIDE.dist;
+/** ISO/IEC 7810 ID-1 card in device units (device width 53.1 mm). */
+const CARD = { w: 53.98 / 53.1, h: 85.6 / 53.1, r: 3.18 / 53.1 };
 
 type Shot = { cam: [number, number, number]; tgt: [number, number, number]; fov: number; theta: number; slideX: number; sweep: number; glint: number };
 
 export default class Slab extends Scene {
   pass = new FSPass(FRAG, {
     camPos: { value: [0, 0, 3] }, camTgt: { value: [0, 0, 0] }, fov: { value: 0.6 }, theta: { value: 0 },
-    slideX: { value: 0 }, sweep: { value: -2 }, glint: { value: 0 }, time: { value: 0 },
+    slideX: { value: 0 }, sweep: { value: -2 }, glint: { value: 0 }, time: { value: 0 }, gain: { value: 1 },
   });
   text = new Layer2D();
   L: Line[] = [];
@@ -202,17 +214,19 @@ export default class Slab extends Scene {
       const k = prog(t, c1, c2, ease.inOutQuad);
       const y = lerp(-0.55, 0.45, k);
       return { i: 1, s: {
-        cam: [-0.95, y - 0.1, 0.55], tgt: [-0.5, y + 0.05, 0.02], fov: 0.5,
+        cam: [-0.78, y - 0.42, 0.3], tgt: [-0.5, y + 0.2, 0.0], fov: 0.55,
         theta: Math.PI, slideX: 0, sweep: lerp(-1.2, 1.2, k), glint: 0,
       } };
     }
     if (t < c3) {
-      // dead side-on, long lens: the slab reads as a thin bar; slides out of frame on "out"
+      // straight on the back, long lens: a bank card's outline slides over it (same footprint); on
+      // "it" the slab turns side-on and reads as a thin bar (6.2 mm); it slides out of frame on "out"
       const out = word(l3, 'out').start;
+      const turn = Math.min(word(l3, 'it').start, word(l3, 'card').start + 0.75);
       const sx = lerp(0, -3.2, prog(t, out - 0.05, word(l3, 'sight').end + 0.1, ease.inCubic));
       return { i: 2, s: {
-        cam: [0, 0.1, 11.5], tgt: [0, -0.3, 0], fov: 0.22,
-        theta: Math.PI * 0.5, slideX: sx, sweep: -2, glint: 0,
+        cam: [0, SIDE.cy, SIDE.dist], tgt: [0, SIDE.cy, 0], fov: SIDE.fov,
+        theta: lerp(Math.PI, Math.PI * 0.5, prog(t, turn - 0.12, turn + 0.45, ease.inOutCubic)), slideX: sx, sweep: -2, glint: 0,
       } };
     }
     // the back, head-on and slightly high; the light sweeps across on "catching the light"
@@ -226,12 +240,59 @@ export default class Slab extends Scene {
     } };
   }
 
+  /** Shot 3 overlay: the bank card's outline over the slab, then the 6.2 mm dimension once side-on. */
+  cardOverlay(c: CanvasRenderingContext2D, t: number) {
+    const l3 = this.L[2]!;
+    const word = (q: string) => l3.words.find((w) => w.w.toLowerCase().startsWith(q))!;
+    const card = word('card'), turn = Math.min(word('it').start, card.start + 0.75), out = word('out').start;
+    const cx = W / 2, cy = H / 2 - (0 - SIDE.cy) * SIDE_PPU; // the slab's centre on screen
+    const ww = CARD.w * SIDE_PPU, hh = CARD.h * SIDE_PPU;
+    c.font = font(F.mono(400), 22);
+    // the card slides in from the left and settles over the slab, then fades as the slab turns
+    const kIn = prog(t, card.start - 0.15, card.start + 0.45, ease.outExpo);
+    const kOut = 1 - prog(t, turn - 0.1, turn + 0.25);
+    const a = kIn * kOut;
+    if (a > 0) {
+      const x = lerp(cx - W * 0.4, cx, kIn);
+      c.globalAlpha = a;
+      c.strokeStyle = rgba('bone', 0.9);
+      c.lineWidth = 1.5;
+      c.setLineDash([10, 7]);
+      c.beginPath();
+      c.roundRect(x - ww / 2, cy - hh / 2, ww, hh, CARD.r * SIDE_PPU);
+      c.stroke();
+      c.setLineDash([]);
+      c.fillStyle = rgba('bone', 0.85);
+      c.fillText('bank card   85.6 × 54.0 mm', x + ww / 2 + 28, cy - hh / 2 + 18);
+      c.fillStyle = rgba('bone', 0.55);
+      c.fillText('OneKey Pro 2   84.9 × 53.1 mm', x + ww / 2 + 28, cy - hh / 2 + 50);
+      c.globalAlpha = 1;
+    }
+    // side-on: the thickness, as a dimension line above the bar
+    const kD = prog(t, turn + 0.3, turn + 0.55, ease.outCubic) * (1 - prog(t, out + 0.05, out + 0.25));
+    if (kD > 0) {
+      const half = (DEVICE.t / 2) * SIDE_PPU, y = cy - (DEVICE.h / 2) * SIDE_PPU - 34;
+      c.globalAlpha = kD;
+      c.strokeStyle = rgba('bone', 0.9);
+      c.lineWidth = 1.2;
+      c.beginPath();
+      c.moveTo(cx - half, y - 10); c.lineTo(cx - half, y + 10);
+      c.moveTo(cx + half, y - 10); c.lineTo(cx + half, y + 10);
+      c.moveTo(cx - half - 40, y); c.lineTo(cx - half, y);
+      c.moveTo(cx + half + 40, y); c.lineTo(cx + half, y);
+      c.stroke();
+      c.fillStyle = rgba('bone', 0.95);
+      c.fillText('6.2 mm', cx + half + 52, y + 7);
+      c.globalAlpha = 1;
+    }
+  }
+
   render(f: Frame, out: THREE.WebGLRenderTarget) {
     const { renderer, comp } = this.ctx;
     const { i, s } = this.shot(f.t);
     const u = this.pass.u;
     u.camPos!.value = s.cam; u.camTgt!.value = s.tgt; u.fov!.value = s.fov; u.theta!.value = s.theta;
-    u.slideX!.value = s.slideX; u.sweep!.value = s.sweep; u.glint!.value = s.glint; u.time!.value = f.t;
+    u.slideX!.value = s.slideX; u.sweep!.value = s.sweep; u.glint!.value = s.glint; u.time!.value = f.t; u.gain!.value = i === 1 ? 0.4 : 1; // the macro sits right under the softbox
     this.pass.render(renderer, out);
 
     // ---- lyric: one line per shot, set in Archivo, sung words in bone, the rest dim
@@ -254,6 +315,7 @@ export default class Slab extends Scene {
       c.fillStyle = rgba('bone', k > 0 ? 1 : 0.18 + 0.17 * early);
       c.fillText(w.w, x0 + g.x, y0 - (1 - ease.outExpo(clamp(k * 4))) * 10 * (k > 0 ? 1 : 0));
     }
+    if (i === 2) this.cardOverlay(c, f.t);
     comp.draw(renderer, this.text.upload(), out);
     return { bloom: 0.45, vignette: 0.4 };
   }
