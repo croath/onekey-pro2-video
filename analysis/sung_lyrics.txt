@@ -1,0 +1,58 @@
+# The lyrics as actually sung on audio/track.wav (reconciled from Whisper large-v3 against docs/SONG.md).
+# [section t0 t1]  = section name and the window (s) the CTC alignment searches for its lines.
+# {a b|c|}       = alternative word sequences (empty = drop): align_lyrics.py keeps the one with the best CTC path score.
+# word=alt_alt   = display word = what the aligner listens for (phonetic spelling, a-z and ', _ = word gap).
+# @t line        = manual line window start (just before the first word), read off the vocal-stem spectrogram
+#                  (analysis/qa_plot.py) and the CTC greedy decode, where the automatic window was wrong: the
+#                  "ooh" pad before chorus 2, and "know" held into the "One key (OneKey)" lines.
+
+[verse1 17.0 47.5]
+Glass on the front and glass on the back
+A ribbon of metal, graphite and black
+Thin as a card, it slips out of sight
+One little key mark catching the light
+Quiet by design, no edges to show
+Everything that matters stays down below
+
+[pre 49.3 57.3]
+Scan it, sign it, send it
+Not a single wire
+Read it before you mean it
+Every word in plain type
+
+[chorus1 57.0 78.5]
+Keep your keys at home
+Only the signatures go
+Twenty-four=twenty_four words the internet will never know
+@66.3 One key (OneKey),=one_key all yours
+Hold it, sign it, go
+Hold it, sign it, go
+
+[verse2 79.5 110.6]
+# "The" before "contract" is not sung (Whisper and the CTC decode both hear "...online | contract");
+# "on a/the plate" is ambiguous in the audio, the SONG.md wording is kept.
+Four secure elements, EAL=ee_ay_el six plus
+Bank-card=bank_card silicon, so you don't have to trust
+A camera on the back that only reads light
+QR=cue_are in, QR=cue_are out, and nothing online
+Contract says "approve all"? SignGuard=sign_guard says wait
+Clear signing in words, not hex on a plate
+Touch to unlock it, a PIN if you must
+Too many wrong guesses, it wipes itself to dust
+
+[bridge 110.3 126.0]
+It's not just your coins anymore
+It's the key to every door
+FIDO=fido in your pocket, passkeys,=pass_keys no passwords=pass_words to type
+Tap it once and you're in, no phishing=fishing link tonight
+
+[chorus2 129.5 146.1]
+@130.5 Keep your keys at home
+Only the signatures go
+Twenty-four=twenty_four words the internet will never know
+Open source, read every line
+@140.95 One key (OneKey),=one_key all yours
+Hold it, sign it, go
+
+[outro 164.5 168.5]
+OneKey=one_key Pro 2=two

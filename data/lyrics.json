@@ -1,159 +1,1606 @@
 {
  "lines": [
   {
+   "text": "Glass on the front and glass on the back",
+   "start": 18.585,
+   "end": 21.599,
+   "words": [
+    {
+     "w": "Glass",
+     "start": 18.585,
+     "end": 18.966,
+     "conf": 0.941
+    },
+    {
+     "w": "on",
+     "start": 18.986,
+     "end": 19.107,
+     "conf": 0.987
+    },
+    {
+     "w": "the",
+     "start": 19.127,
+     "end": 19.308,
+     "conf": 0.789
+    },
+    {
+     "w": "front",
+     "start": 19.328,
+     "end": 19.69,
+     "conf": 0.945
+    },
+    {
+     "w": "and",
+     "start": 20.373,
+     "end": 20.534,
+     "conf": 0.889
+    },
+    {
+     "w": "glass",
+     "start": 20.554,
+     "end": 20.895,
+     "conf": 0.95
+    },
+    {
+     "w": "on",
+     "start": 20.915,
+     "end": 21.016,
+     "conf": 0.898
+    },
+    {
+     "w": "the",
+     "start": 21.036,
+     "end": 21.15,
+     "conf": 0.785
+    },
+    {
+     "w": "back",
+     "start": 21.297,
+     "end": 21.599,
+     "conf": 0.988
+    }
+   ]
+  },
+  {
+   "text": "A ribbon of metal, graphite and black",
+   "start": 22.345,
+   "end": 25.499,
+   "words": [
+    {
+     "w": "A",
+     "start": 22.345,
+     "end": 22.486,
+     "conf": 0.953
+    },
+    {
+     "w": "ribbon",
+     "start": 22.506,
+     "end": 23.049,
+     "conf": 0.921
+    },
+    {
+     "w": "of",
+     "start": 23.069,
+     "end": 23.209,
+     "conf": 0.568
+    },
+    {
+     "w": "metal,",
+     "start": 23.229,
+     "end": 23.92,
+     "conf": 0.672
+    },
+    {
+     "w": "graphite",
+     "start": 24.193,
+     "end": 25.017,
+     "conf": 0.61
+    },
+    {
+     "w": "and",
+     "start": 25.037,
+     "end": 25.158,
+     "conf": 0.722
+    },
+    {
+     "w": "black",
+     "start": 25.178,
+     "end": 25.499,
+     "conf": 0.978
+    }
+   ]
+  },
+  {
+   "text": "Thin as a card, it slips out of sight",
+   "start": 26.305,
+   "end": 29.356,
+   "words": [
+    {
+     "w": "Thin",
+     "start": 26.305,
+     "end": 26.727,
+     "conf": 0.889
+    },
+    {
+     "w": "as",
+     "start": 26.747,
+     "end": 26.9,
+     "conf": 0.795
+    },
+    {
+     "w": "a",
+     "start": 26.968,
+     "end": 26.988,
+     "conf": 0.411
+    },
+    {
+     "w": "card,",
+     "start": 27.068,
+     "end": 27.6,
+     "conf": 0.736
+    },
+    {
+     "w": "it",
+     "start": 28.132,
+     "end": 28.232,
+     "conf": 0.768
+    },
+    {
+     "w": "slips",
+     "start": 28.252,
+     "end": 28.694,
+     "conf": 0.985
+    },
+    {
+     "w": "out",
+     "start": 28.714,
+     "end": 28.875,
+     "conf": 0.986
+    },
+    {
+     "w": "of",
+     "start": 28.895,
+     "end": 28.995,
+     "conf": 0.356
+    },
+    {
+     "w": "sight",
+     "start": 29.015,
+     "end": 29.356,
+     "conf": 0.887
+    }
+   ]
+  },
+  {
+   "text": "One little key mark catching the light",
+   "start": 30.344,
+   "end": 33.43,
+   "words": [
+    {
+     "w": "One",
+     "start": 30.344,
+     "end": 30.464,
+     "conf": 0.397
+    },
+    {
+     "w": "little",
+     "start": 30.484,
+     "end": 30.81,
+     "conf": 0.284
+    },
+    {
+     "w": "key",
+     "start": 30.907,
+     "end": 31.47,
+     "conf": 0.365
+    },
+    {
+     "w": "mark",
+     "start": 31.49,
+     "end": 31.751,
+     "conf": 0.602
+    },
+    {
+     "w": "catching",
+     "start": 31.872,
+     "end": 32.656,
+     "conf": 0.71
+    },
+    {
+     "w": "the",
+     "start": 32.676,
+     "end": 32.877,
+     "conf": 0.617
+    },
+    {
+     "w": "light",
+     "start": 32.897,
+     "end": 33.43,
+     "conf": 0.231
+    }
+   ]
+  },
+  {
+   "text": "Quiet by design, no edges to show",
+   "start": 33.582,
+   "end": 38.95,
+   "words": [
+    {
+     "w": "Quiet",
+     "start": 33.582,
+     "end": 34.03,
+     "conf": 0.704
+    },
+    {
+     "w": "by",
+     "start": 34.083,
+     "end": 34.604,
+     "conf": 0.129
+    },
+    {
+     "w": "design,",
+     "start": 34.624,
+     "end": 35.54,
+     "conf": 0.658
+    },
+    {
+     "w": "no",
+     "start": 36.79,
+     "end": 37.13,
+     "conf": 0.998
+    },
+    {
+     "w": "edges",
+     "start": 37.551,
+     "end": 38.193,
+     "conf": 0.957
+    },
+    {
+     "w": "to",
+     "start": 38.213,
+     "end": 38.614,
+     "conf": 0.999
+    },
+    {
+     "w": "show",
+     "start": 38.634,
+     "end": 38.95,
+     "conf": 0.986
+    }
+   ]
+  },
+  {
+   "text": "Everything that matters stays down below",
+   "start": 41.483,
+   "end": 48.16,
+   "words": [
+    {
+     "w": "Everything",
+     "start": 41.483,
+     "end": 42.305,
+     "conf": 0.967
+    },
+    {
+     "w": "that",
+     "start": 42.325,
+     "end": 42.767,
+     "conf": 0.978
+    },
+    {
+     "w": "matters",
+     "start": 42.787,
+     "end": 44.131,
+     "conf": 0.832
+    },
+    {
+     "w": "stays",
+     "start": 44.151,
+     "end": 45.434,
+     "conf": 0.743
+    },
+    {
+     "w": "down",
+     "start": 45.454,
+     "end": 46.156,
+     "conf": 0.996
+    },
+    {
+     "w": "below",
+     "start": 46.176,
+     "end": 48.16,
+     "conf": 0.789
+    }
+   ]
+  },
+  {
+   "text": "Scan it, sign it, send it",
+   "start": 50.406,
+   "end": 51.837,
+   "words": [
+    {
+     "w": "Scan",
+     "start": 50.406,
+     "end": 50.789,
+     "conf": 0.842
+    },
+    {
+     "w": "it,",
+     "start": 50.809,
+     "end": 50.93,
+     "conf": 0.214
+    },
+    {
+     "w": "sign",
+     "start": 50.95,
+     "end": 51.273,
+     "conf": 0.722
+    },
+    {
+     "w": "it,",
+     "start": 51.293,
+     "end": 51.394,
+     "conf": 0.152
+    },
+    {
+     "w": "send",
+     "start": 51.414,
+     "end": 51.757,
+     "conf": 0.389
+    },
+    {
+     "w": "it",
+     "start": 51.777,
+     "end": 51.837,
+     "conf": 0.15
+    }
+   ]
+  },
+  {
+   "text": "Not a single wire",
+   "start": 52.186,
+   "end": 54.086,
+   "words": [
+    {
+     "w": "Not",
+     "start": 52.186,
+     "end": 52.367,
+     "conf": 0.753
+    },
+    {
+     "w": "a",
+     "start": 52.69,
+     "end": 52.831,
+     "conf": 0.901
+    },
+    {
+     "w": "single",
+     "start": 52.851,
+     "end": 53.416,
+     "conf": 0.99
+    },
+    {
+     "w": "wire",
+     "start": 53.436,
+     "end": 54.086,
+     "conf": 0.279
+    }
+   ]
+  },
+  {
+   "text": "Read it before you mean it",
+   "start": 54.106,
+   "end": 55.926,
+   "words": [
+    {
+     "w": "Read",
+     "start": 54.106,
+     "end": 54.247,
+     "conf": 0.278
+    },
+    {
+     "w": "it",
+     "start": 54.267,
+     "end": 54.41,
+     "conf": 0.208
+    },
+    {
+     "w": "before",
+     "start": 54.569,
+     "end": 55.033,
+     "conf": 0.988
+    },
+    {
+     "w": "you",
+     "start": 55.053,
+     "end": 55.294,
+     "conf": 0.996
+    },
+    {
+     "w": "mean",
+     "start": 55.314,
+     "end": 55.677,
+     "conf": 0.954
+    },
+    {
+     "w": "it",
+     "start": 55.697,
+     "end": 55.926,
+     "conf": 0.956
+    }
+   ]
+  },
+  {
+   "text": "Every word in plain type",
+   "start": 55.946,
+   "end": 58.589,
+   "words": [
+    {
+     "w": "Every",
+     "start": 55.946,
+     "end": 56.229,
+     "conf": 0.991
+    },
+    {
+     "w": "word",
+     "start": 56.249,
+     "end": 56.553,
+     "conf": 0.947
+    },
+    {
+     "w": "in",
+     "start": 56.573,
+     "end": 56.694,
+     "conf": 0.612
+    },
+    {
+     "w": "plain",
+     "start": 56.714,
+     "end": 57.118,
+     "conf": 0.719
+    },
+    {
+     "w": "type",
+     "start": 57.138,
+     "end": 58.589,
+     "conf": 0.001
+    }
+   ]
+  },
+  {
+   "text": "Keep your keys at home",
+   "start": 58.609,
+   "end": 60.465,
+   "words": [
+    {
+     "w": "Keep",
+     "start": 58.609,
+     "end": 58.82,
+     "conf": 0.14
+    },
+    {
+     "w": "your",
+     "start": 58.871,
+     "end": 59.031,
+     "conf": 0.076
+    },
+    {
+     "w": "keys",
+     "start": 59.072,
+     "end": 59.494,
+     "conf": 0.21
+    },
+    {
+     "w": "at",
+     "start": 59.514,
+     "end": 59.65,
+     "conf": 0.282
+    },
+    {
+     "w": "home",
+     "start": 59.836,
+     "end": 60.465,
+     "conf": 0.254
+    }
+   ]
+  },
+  {
+   "text": "Only the signatures go",
+   "start": 60.485,
+   "end": 62.05,
+   "words": [
+    {
+     "w": "Only",
+     "start": 60.485,
+     "end": 60.808,
+     "conf": 0.348
+    },
+    {
+     "w": "the",
+     "start": 60.828,
+     "end": 60.969,
+     "conf": 0.942
+    },
+    {
+     "w": "signatures",
+     "start": 60.989,
+     "end": 61.71,
+     "conf": 0.378
+    },
+    {
+     "w": "go",
+     "start": 61.774,
+     "end": 62.05,
+     "conf": 0.909
+    }
+   ]
+  },
+  {
+   "text": "Twenty-four words the internet will never know",
+   "start": 62.423,
+   "end": 66.501,
+   "words": [
+    {
+     "w": "Twenty-four",
+     "start": 62.423,
+     "end": 62.945,
+     "conf": 0.39
+    },
+    {
+     "w": "words",
+     "start": 62.965,
+     "end": 63.407,
+     "conf": 0.551
+    },
+    {
+     "w": "the",
+     "start": 63.427,
+     "end": 63.789,
+     "conf": 0.03
+    },
+    {
+     "w": "internet",
+     "start": 63.809,
+     "end": 64.54,
+     "conf": 0.264
+    },
+    {
+     "w": "will",
+     "start": 64.592,
+     "end": 64.873,
+     "conf": 0.366
+    },
+    {
+     "w": "never",
+     "start": 64.893,
+     "end": 65.335,
+     "conf": 0.929
+    },
+    {
+     "w": "know",
+     "start": 65.355,
+     "end": 66.501,
+     "conf": 0.497
+    }
+   ]
+  },
+  {
+   "text": "One key (OneKey), all yours",
+   "start": 66.521,
+   "end": 69.362,
+   "words": [
+    {
+     "w": "One",
+     "start": 66.521,
+     "end": 66.703,
+     "conf": 0.396
+    },
+    {
+     "w": "key",
+     "start": 66.723,
+     "end": 67.447,
+     "conf": 0.24
+    },
+    {
+     "w": "(OneKey),",
+     "start": 67.467,
+     "end": 68.393,
+     "conf": 0.277
+    },
+    {
+     "w": "all",
+     "start": 68.413,
+     "end": 68.654,
+     "conf": 0.616
+    },
+    {
+     "w": "yours",
+     "start": 68.674,
+     "end": 69.362,
+     "conf": 0.494
+    }
+   ]
+  },
+  {
+   "text": "Hold it, sign it, go",
+   "start": 69.382,
+   "end": 73.03,
+   "words": [
+    {
+     "w": "Hold",
+     "start": 69.382,
+     "end": 70.004,
+     "conf": 0.715
+    },
+    {
+     "w": "it,",
+     "start": 70.024,
+     "end": 70.09,
+     "conf": 0.084
+    },
+    {
+     "w": "sign",
+     "start": 70.305,
+     "end": 70.786,
+     "conf": 0.423
+    },
+    {
+     "w": "it,",
+     "start": 70.806,
+     "end": 71.11,
+     "conf": 0.259
+    },
+    {
+     "w": "go",
+     "start": 71.308,
+     "end": 73.03,
+     "conf": 0.851
+    }
+   ]
+  },
+  {
+   "text": "Hold it, sign it, go",
+   "start": 76.29,
+   "end": 77.58,
+   "words": [
+    {
+     "w": "Hold",
+     "start": 76.29,
+     "end": 76.631,
+     "conf": 0.335
+    },
+    {
+     "w": "it,",
+     "start": 76.651,
+     "end": 76.732,
+     "conf": 0.046
+    },
+    {
+     "w": "sign",
+     "start": 76.752,
+     "end": 77.114,
+     "conf": 0.9
+    },
+    {
+     "w": "it,",
+     "start": 77.134,
+     "end": 77.174,
+     "conf": 0.362
+    },
+    {
+     "w": "go",
+     "start": 77.254,
+     "end": 77.58,
+     "conf": 0.46
+    }
+   ]
+  },
+  {
+   "text": "Four secure elements, EAL six plus",
+   "start": 81.026,
+   "end": 84.3,
+   "words": [
+    {
+     "w": "Four",
+     "start": 81.026,
+     "end": 81.448,
+     "conf": 0.683
+    },
+    {
+     "w": "secure",
+     "start": 81.468,
+     "end": 82.171,
+     "conf": 0.434
+    },
+    {
+     "w": "elements,",
+     "start": 82.191,
+     "end": 82.734,
+     "conf": 0.304
+    },
+    {
+     "w": "EAL",
+     "start": 82.754,
+     "end": 83.397,
+     "conf": 0.158
+    },
+    {
+     "w": "six",
+     "start": 83.417,
+     "end": 83.8,
+     "conf": 0.615
+    },
+    {
+     "w": "plus",
+     "start": 83.879,
+     "end": 84.3,
+     "conf": 0.52
+    }
+   ]
+  },
+  {
+   "text": "Bank-card silicon, so you don't have to trust",
+   "start": 84.385,
+   "end": 87.964,
+   "words": [
+    {
+     "w": "Bank-card",
+     "start": 84.385,
+     "end": 85.369,
+     "conf": 0.693
+    },
+    {
+     "w": "silicon,",
+     "start": 85.389,
+     "end": 86.012,
+     "conf": 0.632
+    },
+    {
+     "w": "so",
+     "start": 86.032,
+     "end": 86.273,
+     "conf": 0.827
+    },
+    {
+     "w": "you",
+     "start": 86.293,
+     "end": 86.373,
+     "conf": 0.167
+    },
+    {
+     "w": "don't",
+     "start": 86.534,
+     "end": 86.81,
+     "conf": 0.903
+    },
+    {
+     "w": "have",
+     "start": 87.036,
+     "end": 87.338,
+     "conf": 0.938
+    },
+    {
+     "w": "to",
+     "start": 87.498,
+     "end": 87.6,
+     "conf": 0.91
+    },
+    {
+     "w": "trust",
+     "start": 87.659,
+     "end": 87.964,
+     "conf": 0.326
+    }
+   ]
+  },
+  {
+   "text": "A camera on the back that only reads light",
+   "start": 87.984,
+   "end": 91.88,
+   "words": [
+    {
+     "w": "A",
+     "start": 87.984,
+     "end": 88.21,
+     "conf": 0.241
+    },
+    {
+     "w": "camera",
+     "start": 88.385,
+     "end": 89.12,
+     "conf": 0.363
+    },
+    {
+     "w": "on",
+     "start": 89.269,
+     "end": 89.369,
+     "conf": 0.996
+    },
+    {
+     "w": "the",
+     "start": 89.389,
+     "end": 89.5,
+     "conf": 0.97
+    },
+    {
+     "w": "back",
+     "start": 89.61,
+     "end": 89.93,
+     "conf": 0.931
+    },
+    {
+     "w": "that",
+     "start": 90.092,
+     "end": 90.233,
+     "conf": 0.694
+    },
+    {
+     "w": "only",
+     "start": 90.534,
+     "end": 91.056,
+     "conf": 0.966
+    },
+    {
+     "w": "reads",
+     "start": 91.076,
+     "end": 91.538,
+     "conf": 0.576
+    },
+    {
+     "w": "light",
+     "start": 91.558,
+     "end": 91.88,
+     "conf": 0.491
+    }
+   ]
+  },
+  {
+   "text": "QR in, QR out, and nothing online",
+   "start": 92.004,
+   "end": 95.9,
+   "words": [
+    {
+     "w": "QR",
+     "start": 92.004,
+     "end": 92.566,
+     "conf": 0.508
+    },
+    {
+     "w": "in,",
+     "start": 92.586,
+     "end": 92.71,
+     "conf": 0.294
+    },
+    {
+     "w": "QR",
+     "start": 92.928,
+     "end": 93.551,
+     "conf": 0.535
+    },
+    {
+     "w": "out,",
+     "start": 93.571,
+     "end": 93.66,
+     "conf": 0.013
+    },
+    {
+     "w": "and",
+     "start": 93.912,
+     "end": 94.113,
+     "conf": 0.083
+    },
+    {
+     "w": "nothing",
+     "start": 94.133,
+     "end": 95.057,
+     "conf": 0.463
+    },
+    {
+     "w": "online",
+     "start": 95.077,
+     "end": 95.9,
+     "conf": 0.48
+    }
+   ]
+  },
+  {
+   "text": "Contract says \"approve all\"? SignGuard says wait",
+   "start": 96.005,
+   "end": 99.48,
+   "words": [
+    {
+     "w": "Contract",
+     "start": 96.005,
+     "end": 96.708,
+     "conf": 0.78
+    },
+    {
+     "w": "says",
+     "start": 96.728,
+     "end": 97.049,
+     "conf": 0.436
+    },
+    {
+     "w": "\"approve",
+     "start": 97.069,
+     "end": 97.511,
+     "conf": 0.803
+    },
+    {
+     "w": "all\"?",
+     "start": 97.531,
+     "end": 97.651,
+     "conf": 0.624
+    },
+    {
+     "w": "SignGuard",
+     "start": 97.671,
+     "end": 98.595,
+     "conf": 0.801
+    },
+    {
+     "w": "says",
+     "start": 98.615,
+     "end": 99.097,
+     "conf": 0.741
+    },
+    {
+     "w": "wait",
+     "start": 99.117,
+     "end": 99.48,
+     "conf": 0.482
+    }
+   ]
+  },
+  {
+   "text": "Clear signing in words, not hex on a plate",
+   "start": 99.543,
+   "end": 103.06,
+   "words": [
+    {
+     "w": "Clear",
+     "start": 99.543,
+     "end": 99.985,
+     "conf": 0.97
+    },
+    {
+     "w": "signing",
+     "start": 100.005,
+     "end": 100.749,
+     "conf": 0.941
+    },
+    {
+     "w": "in",
+     "start": 100.769,
+     "end": 100.99,
+     "conf": 0.696
+    },
+    {
+     "w": "words,",
+     "start": 101.01,
+     "end": 101.492,
+     "conf": 0.959
+    },
+    {
+     "w": "not",
+     "start": 101.512,
+     "end": 101.914,
+     "conf": 0.969
+    },
+    {
+     "w": "hex",
+     "start": 101.934,
+     "end": 102.195,
+     "conf": 0.547
+    },
+    {
+     "w": "on",
+     "start": 102.215,
+     "end": 102.517,
+     "conf": 0.479
+    },
+    {
+     "w": "a",
+     "start": 102.537,
+     "end": 102.557,
+     "conf": 0.002
+    },
+    {
+     "w": "plate",
+     "start": 102.597,
+     "end": 103.06,
+     "conf": 0.466
+    }
+   ]
+  },
+  {
+   "text": "Touch to unlock it, a PIN if you must",
+   "start": 103.123,
+   "end": 106.762,
+   "words": [
+    {
+     "w": "Touch",
+     "start": 103.123,
+     "end": 103.344,
+     "conf": 0.938
+    },
+    {
+     "w": "to",
+     "start": 103.364,
+     "end": 103.645,
+     "conf": 0.621
+    },
+    {
+     "w": "unlock",
+     "start": 103.665,
+     "end": 104.047,
+     "conf": 0.763
+    },
+    {
+     "w": "it,",
+     "start": 104.248,
+     "end": 104.36,
+     "conf": 0.687
+    },
+    {
+     "w": "a",
+     "start": 105.553,
+     "end": 105.58,
+     "conf": 0.923
+    },
+    {
+     "w": "PIN",
+     "start": 105.694,
+     "end": 106.055,
+     "conf": 0.975
+    },
+    {
+     "w": "if",
+     "start": 106.075,
+     "end": 106.196,
+     "conf": 0.996
+    },
+    {
+     "w": "you",
+     "start": 106.216,
+     "end": 106.437,
+     "conf": 0.97
+    },
+    {
+     "w": "must",
+     "start": 106.457,
+     "end": 106.762,
+     "conf": 0.996
+    }
+   ]
+  },
+  {
+   "text": "Too many wrong guesses, it wipes itself to dust",
+   "start": 106.782,
+   "end": 111.104,
+   "words": [
+    {
+     "w": "Too",
+     "start": 106.782,
+     "end": 107.144,
+     "conf": 0.526
+    },
+    {
+     "w": "many",
+     "start": 107.164,
+     "end": 107.626,
+     "conf": 0.988
+    },
+    {
+     "w": "wrong",
+     "start": 107.646,
+     "end": 108.108,
+     "conf": 0.947
+    },
+    {
+     "w": "guesses,",
+     "start": 108.128,
+     "end": 108.912,
+     "conf": 0.361
+    },
+    {
+     "w": "it",
+     "start": 108.932,
+     "end": 109.033,
+     "conf": 0.064
+    },
+    {
+     "w": "wipes",
+     "start": 109.053,
+     "end": 109.354,
+     "conf": 0.257
+    },
+    {
+     "w": "itself",
+     "start": 109.374,
+     "end": 109.97,
+     "conf": 0.623
+    },
+    {
+     "w": "to",
+     "start": 109.997,
+     "end": 110.279,
+     "conf": 0.897
+    },
+    {
+     "w": "dust",
+     "start": 110.299,
+     "end": 111.104,
+     "conf": 0.007
+    }
+   ]
+  },
+  {
+   "text": "It's not just your coins anymore",
+   "start": 111.124,
+   "end": 114.765,
+   "words": [
+    {
+     "w": "It's",
+     "start": 111.124,
+     "end": 111.385,
+     "conf": 0.299
+    },
+    {
+     "w": "not",
+     "start": 111.405,
+     "end": 111.707,
+     "conf": 0.938
+    },
+    {
+     "w": "just",
+     "start": 111.727,
+     "end": 112.048,
+     "conf": 0.712
+    },
+    {
+     "w": "your",
+     "start": 112.068,
+     "end": 112.33,
+     "conf": 0.46
+    },
+    {
+     "w": "coins",
+     "start": 112.35,
+     "end": 113.013,
+     "conf": 0.918
+    },
+    {
+     "w": "anymore",
+     "start": 113.033,
+     "end": 114.765,
+     "conf": 0.844
+    }
+   ]
+  },
+  {
+   "text": "It's the key to every door",
+   "start": 114.785,
+   "end": 117.962,
+   "words": [
+    {
+     "w": "It's",
+     "start": 114.785,
+     "end": 114.946,
+     "conf": 0.921
+    },
+    {
+     "w": "the",
+     "start": 114.966,
+     "end": 115.106,
+     "conf": 0.996
+    },
+    {
+     "w": "key",
+     "start": 115.126,
+     "end": 115.609,
+     "conf": 0.964
+    },
+    {
+     "w": "to",
+     "start": 115.629,
+     "end": 116.472,
+     "conf": 0.998
+    },
+    {
+     "w": "every",
+     "start": 116.492,
+     "end": 117.075,
+     "conf": 0.948
+    },
+    {
+     "w": "door",
+     "start": 117.095,
+     "end": 117.962,
+     "conf": 0.852
+    }
+   ]
+  },
+  {
+   "text": "FIDO in your pocket, passkeys, no passwords to type",
+   "start": 117.982,
+   "end": 122.179,
+   "words": [
+    {
+     "w": "FIDO",
+     "start": 117.982,
+     "end": 118.665,
+     "conf": 0.839
+    },
+    {
+     "w": "in",
+     "start": 118.685,
+     "end": 118.786,
+     "conf": 0.968
+    },
+    {
+     "w": "your",
+     "start": 118.806,
+     "end": 118.966,
+     "conf": 0.956
+    },
+    {
+     "w": "pocket,",
+     "start": 118.986,
+     "end": 119.35,
+     "conf": 0.988
+    },
+    {
+     "w": "passkeys,",
+     "start": 119.448,
+     "end": 120.392,
+     "conf": 0.439
+    },
+    {
+     "w": "no",
+     "start": 120.412,
+     "end": 120.834,
+     "conf": 0.987
+    },
+    {
+     "w": "passwords",
+     "start": 120.854,
+     "end": 121.537,
+     "conf": 0.768
+    },
+    {
+     "w": "to",
+     "start": 121.557,
+     "end": 121.67,
+     "conf": 0.442
+    },
+    {
+     "w": "type",
+     "start": 121.778,
+     "end": 122.179,
+     "conf": 0.255
+    }
+   ]
+  },
+  {
+   "text": "Tap it once and you're in, no phishing link tonight",
+   "start": 122.203,
+   "end": 127.3,
+   "words": [
+    {
+     "w": "Tap",
+     "start": 122.203,
+     "end": 122.484,
+     "conf": 0.587
+    },
+    {
+     "w": "it",
+     "start": 122.585,
+     "end": 122.926,
+     "conf": 0.04
+    },
+    {
+     "w": "once",
+     "start": 122.946,
+     "end": 123.268,
+     "conf": 0.871
+    },
+    {
+     "w": "and",
+     "start": 123.288,
+     "end": 123.408,
+     "conf": 0.947
+    },
+    {
+     "w": "you're",
+     "start": 123.428,
+     "end": 123.81,
+     "conf": 0.832
+    },
+    {
+     "w": "in,",
+     "start": 123.83,
+     "end": 123.931,
+     "conf": 0.624
+    },
+    {
+     "w": "no",
+     "start": 123.951,
+     "end": 124.112,
+     "conf": 0.358
+    },
+    {
+     "w": "phishing",
+     "start": 124.132,
+     "end": 124.614,
+     "conf": 0.727
+    },
+    {
+     "w": "link",
+     "start": 124.634,
+     "end": 125.01,
+     "conf": 0.935
+    },
+    {
+     "w": "tonight",
+     "start": 125.056,
+     "end": 127.3,
+     "conf": 0.173
+    }
+   ]
+  },
+  {
+   "text": "Keep your keys at home",
+   "start": 130.702,
+   "end": 132.466,
+   "words": [
+    {
+     "w": "Keep",
+     "start": 130.702,
+     "end": 130.823,
+     "conf": 0.022
+    },
+    {
+     "w": "your",
+     "start": 130.965,
+     "end": 131.086,
+     "conf": 0.237
+    },
+    {
+     "w": "keys",
+     "start": 131.167,
+     "end": 131.551,
+     "conf": 0.228
+    },
+    {
+     "w": "at",
+     "start": 131.571,
+     "end": 131.62,
+     "conf": 0.222
+    },
+    {
+     "w": "home",
+     "start": 131.915,
+     "end": 132.466,
+     "conf": 0.237
+    }
+   ]
+  },
+  {
+   "text": "Only the signatures go",
+   "start": 132.486,
+   "end": 134.463,
+   "words": [
+    {
+     "w": "Only",
+     "start": 132.486,
+     "end": 132.788,
+     "conf": 0.846
+    },
+    {
+     "w": "the",
+     "start": 132.808,
+     "end": 133.029,
+     "conf": 0.048
+    },
+    {
+     "w": "signatures",
+     "start": 133.049,
+     "end": 133.75,
+     "conf": 0.822
+    },
+    {
+     "w": "go",
+     "start": 133.794,
+     "end": 134.463,
+     "conf": 0.319
+    }
+   ]
+  },
+  {
+   "text": "Twenty-four words the internet will never know",
+   "start": 134.483,
+   "end": 138.122,
+   "words": [
+    {
+     "w": "Twenty-four",
+     "start": 134.483,
+     "end": 134.985,
+     "conf": 0.253
+    },
+    {
+     "w": "words",
+     "start": 135.005,
+     "end": 135.447,
+     "conf": 0.391
+    },
+    {
+     "w": "the",
+     "start": 135.467,
+     "end": 135.869,
+     "conf": 0.29
+    },
+    {
+     "w": "internet",
+     "start": 135.889,
+     "end": 136.52,
+     "conf": 0.368
+    },
+    {
+     "w": "will",
+     "start": 136.592,
+     "end": 136.853,
+     "conf": 0.899
+    },
+    {
+     "w": "never",
+     "start": 136.873,
+     "end": 137.416,
+     "conf": 0.486
+    },
+    {
+     "w": "know",
+     "start": 137.436,
+     "end": 138.122,
+     "conf": 0.167
+    }
+   ]
+  },
+  {
+   "text": "Open source, read every line",
+   "start": 138.142,
+   "end": 141.311,
+   "words": [
+    {
+     "w": "Open",
+     "start": 138.142,
+     "end": 138.683,
+     "conf": 0.486
+    },
+    {
+     "w": "source,",
+     "start": 138.703,
+     "end": 139.24,
+     "conf": 0.346
+    },
+    {
+     "w": "read",
+     "start": 139.425,
+     "end": 140.067,
+     "conf": 0.427
+    },
+    {
+     "w": "every",
+     "start": 140.087,
+     "end": 140.388,
+     "conf": 0.051
+    },
+    {
+     "w": "line",
+     "start": 140.408,
+     "end": 141.311,
+     "conf": 0.379
+    }
+   ]
+  },
+  {
+   "text": "One key (OneKey), all yours",
+   "start": 141.331,
+   "end": 144.306,
+   "words": [
+    {
+     "w": "One",
+     "start": 141.331,
+     "end": 141.472,
+     "conf": 0.422
+    },
+    {
+     "w": "key",
+     "start": 141.492,
+     "end": 142.254,
+     "conf": 0.074
+    },
+    {
+     "w": "(OneKey),",
+     "start": 142.274,
+     "end": 143.217,
+     "conf": 0.308
+    },
+    {
+     "w": "all",
+     "start": 143.237,
+     "end": 143.458,
+     "conf": 0.595
+    },
+    {
+     "w": "yours",
+     "start": 143.478,
+     "end": 144.306,
+     "conf": 0.621
+    }
+   ]
+  },
+  {
+   "text": "Hold it, sign it, go",
+   "start": 144.326,
+   "end": 146.24,
+   "words": [
+    {
+     "w": "Hold",
+     "start": 144.326,
+     "end": 144.689,
+     "conf": 0.326
+    },
+    {
+     "w": "it,",
+     "start": 144.709,
+     "end": 144.79,
+     "conf": 0.016
+    },
+    {
+     "w": "sign",
+     "start": 144.81,
+     "end": 145.173,
+     "conf": 0.344
+    },
+    {
+     "w": "it,",
+     "start": 145.193,
+     "end": 145.274,
+     "conf": 0.045
+    },
+    {
+     "w": "go",
+     "start": 145.294,
+     "end": 146.24,
+     "conf": 0.735
+    }
+   ]
+  },
+  {
    "text": "OneKey Pro 2",
-   "start": 2,
-   "end": 3.45,
+   "start": 166.19,
+   "end": 168.0,
    "words": [
     {
      "w": "OneKey",
-     "start": 2,
-     "end": 2.45
+     "start": 166.19,
+     "end": 166.82,
+     "conf": 0.341
     },
     {
      "w": "Pro",
-     "start": 2.5,
-     "end": 2.95
+     "start": 166.873,
+     "end": 167.335,
+     "conf": 0.494
     },
     {
      "w": "2",
-     "start": 3.0,
-     "end": 3.45
-    }
-   ]
-  },
-  {
-   "text": "Your keys. Offline.",
-   "start": 8,
-   "end": 9.45,
-   "words": [
-    {
-     "w": "Your",
-     "start": 8,
-     "end": 8.45
-    },
-    {
-     "w": "keys.",
-     "start": 8.5,
-     "end": 8.95
-    },
-    {
-     "w": "Offline.",
-     "start": 9.0,
-     "end": 9.45
-    }
-   ]
-  },
-  {
-   "text": "[selling point 1]",
-   "start": 14,
-   "end": 15.45,
-   "words": [
-    {
-     "w": "[selling",
-     "start": 14,
-     "end": 14.45
-    },
-    {
-     "w": "point",
-     "start": 14.5,
-     "end": 14.95
-    },
-    {
-     "w": "1]",
-     "start": 15.0,
-     "end": 15.45
-    }
-   ]
-  },
-  {
-   "text": "[selling point 2]",
-   "start": 24,
-   "end": 25.45,
-   "words": [
-    {
-     "w": "[selling",
-     "start": 24,
-     "end": 24.45
-    },
-    {
-     "w": "point",
-     "start": 24.5,
-     "end": 24.95
-    },
-    {
-     "w": "2]",
-     "start": 25.0,
-     "end": 25.45
-    }
-   ]
-  },
-  {
-   "text": "[selling point 3]",
-   "start": 32,
-   "end": 33.45,
-   "words": [
-    {
-     "w": "[selling",
-     "start": 32,
-     "end": 32.45
-    },
-    {
-     "w": "point",
-     "start": 32.5,
-     "end": 32.95
-    },
-    {
-     "w": "3]",
-     "start": 33.0,
-     "end": 33.45
-    }
-   ]
-  },
-  {
-   "text": "[selling point 4]",
-   "start": 40,
-   "end": 41.45,
-   "words": [
-    {
-     "w": "[selling",
-     "start": 40,
-     "end": 40.45
-    },
-    {
-     "w": "point",
-     "start": 40.5,
-     "end": 40.95
-    },
-    {
-     "w": "4]",
-     "start": 41.0,
-     "end": 41.45
-    }
-   ]
-  },
-  {
-   "text": "OneKey Pro 2",
-   "start": 50,
-   "end": 51.45,
-   "words": [
-    {
-     "w": "OneKey",
-     "start": 50,
-     "end": 50.45
-    },
-    {
-     "w": "Pro",
-     "start": 50.5,
-     "end": 50.95
-    },
-    {
-     "w": "2",
-     "start": 51.0,
-     "end": 51.45
+     "start": 167.355,
+     "end": 168.0,
+     "conf": 0.327
     }
    ]
   }
  ],
- "notes": "PLACEHOLDER captions / voice-over. Word timings are on the beat grid. Replace with the real script (and forced-aligned timings if there is a voice-over)."
+ "notes": "Word timings for audio/track.wav (seconds from file start). Vocals separated with Demucs htdemucs_ft; lyrics as actually sung (analysis/sung_lyrics.txt, reconciled from Whisper large-v3 against docs/SONG.md) force-aligned by CTC (torchaudio forced_align, wav2vec2 LV-60k 960h, 20 ms frames), per line, with line windows from a whole-section pass and Whisper plus 3 manual line starts checked on the spectrogram. Word start = first frame of its first character; word end extended along the vocal-stem envelope, never past the next word. conf = mean CTC posterior of the word's characters (sung vowels score low; < 0.1 is worth a look). Wordless vocals (intro 5.5-16.5 s, pad before chorus 2, 147-164 s) are not lines. Regenerate: analysis/align_lyrics.py."
 }

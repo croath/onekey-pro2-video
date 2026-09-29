@@ -4,7 +4,10 @@ librosa only (no neural models), so it runs anywhere pip works. Stems are approx
 drums/bass from harmonic-percussive separation, vocal from librosa's REPET-SIM foreground
 mask. Good enough to drive motion; for word timings see align_lyrics (needs models).
 
-Run:  python3 analysis/analyze_audio.py [audio/track.wav] [--sections t1,t2,...]
+Run:  python3 analysis/analyze_audio.py [audio/track.wav] [--sections=t1,t2,...] [--names=intro,verse1,...]
+                                          [--vocals=analysis/stems/htdemucs_ft/track/vocals.wav]
+--sections/--names: section boundaries and labels (from the lyric alignment); --vocals: a separated vocal
+stem (Demucs) for the vocal envelope and onsets instead of the REPET-SIM estimate.
 """
 import json
 import sys
@@ -62,7 +65,9 @@ if '--sections' in opt:
 else:
     bounds = sorted({float(downbeats[np.argmin(np.abs(downbeats - beats[min(p, len(beats) - 1)]))]) for p in pk})
 edges = [0.0] + bounds + [dur]
-sections = [{'name': f'part{i + 1}', 'start': round(a, 3), 'end': round(b, 3)} for i, (a, b) in enumerate(zip(edges, edges[1:])) if b > a]
+names = opt['--names'].split(',') if '--names' in opt else []
+sections = [{'name': names[i] if i < len(names) else f'part{i + 1}', 'start': round(a, 3), 'end': round(b, 3)}
+            for i, (a, b) in enumerate(zip(edges, edges[1:])) if b > a]
 
 # ---------------------------------------------------------------- envelopes (100 fps)
 n_fft = 2048
@@ -77,6 +82,10 @@ Sf = np.minimum(Sv, librosa.decompose.nn_filter(Sv, aggregate=np.median, metric=
 fg = librosa.util.softmask(Sv - Sf, 10 * Sf, power=2) * Sv
 vband = (freqs > 250) & (freqs < 4000)
 vocal_c = np.sqrt((fg[vband] ** 2).mean(0))
+if '--vocals' in opt:
+    yv, _ = librosa.load(opt['--vocals'], sr=SR, mono=True)
+    yv = np.pad(yv, (0, max(0, len(y) - len(yv))))[:len(y)]
+    vocal_c = np.sqrt((np.abs(librosa.stft(yv, n_fft=n_fft, hop_length=hop))[vband] ** 2).mean(0))
 
 t_env = np.arange(int(dur * FPS) + 1) / FPS
 t_stft = librosa.frames_to_time(np.arange(Sx.shape[1]), sr=SR, hop_length=env_hop)
@@ -144,9 +153,12 @@ out = {
     'onsets': {'kick': kick, 'snare': snare, 'hat': hat, 'vocal': vocal_on},
     'notes': (f'librosa analysis of {path}. Tempo drifts (median {bpm:.2f} BPM); beats from DP tracking, '
               f'locally smoothed (+-6 beats). Downbeat phase from harmonic change (beat index {phase} mod 4). '
-              'Sections are unlabelled novelty boundaries snapped to downbeats until lyrics are aligned. '
-              'Envelopes: 100 fps, one-pole 10/90 ms, each /99th percentile. Stems approximated '
-              '(HPSS for drums/bass, REPET-SIM foreground for vocal).'),
+              + ('Sections from the lyric alignment (analysis/align_lyrics.py): vocal sections start at their '
+                 'first sung word, instrumental boundaries on the beat grid. ' if '--names' in opt else
+                 'Sections are unlabelled novelty boundaries snapped to downbeats until lyrics are aligned. ')
+              + 'Envelopes: 100 fps, one-pole 10/90 ms, each /99th percentile. Stems approximated '
+              '(HPSS for drums/bass' + (', Demucs htdemucs_ft stem for vocal).' if '--vocals' in opt else
+                                        ', REPET-SIM foreground for vocal).')),
 }
 json.dump(out, open('data/audio.json', 'w'))
 print(f'duration {dur:.1f}s, {len(beats)} beats, median {bpm:.2f} BPM, downbeat phase {phase}, '
