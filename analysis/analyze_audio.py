@@ -160,7 +160,7 @@ out = {
               '(HPSS for drums/bass' + (', Demucs htdemucs_ft stem for vocal).' if '--vocals' in opt else
                                         ', REPET-SIM foreground for vocal).')),
 }
-json.dump(out, open('data/audio.json', 'w'))
+json.dump(out, open(opt.get('--out', 'data/audio.json'), 'w'))
 print(f'duration {dur:.1f}s, {len(beats)} beats, median {bpm:.2f} BPM, downbeat phase {phase}, '
       f'{len(downbeats)} bars, {len(sections)} sections, kicks {len(kick)} snares {len(snare)} hats {len(hat)} vocal {len(vocal_on)}')
 for s in sections:
