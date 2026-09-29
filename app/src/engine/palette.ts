@@ -1,17 +1,19 @@
 import { hexToLinear } from './util';
 
-// The whole video lives in a restrained palette: ink, bone, and one signal colour.
-// One rare accent (acid, the shrooms moment) — see docs/TREATMENT.md.
+// The whole video lives in a restrained palette: graphite black, bone, and one signal colour,
+// OneKey green (#44D62C, the logo's green; tints from OneKeyHQ/app-monorepo colors/primitive/brand.ts).
+// Keys keep their upstream names so the engine and GLSL (C_SIGNAL, C_EMBER…) work unchanged.
+// See docs/TREATMENT.md.
 export const HEX = {
-  ink: '#0A0A0B', // background black (slightly warm)
-  ink2: '#151517', // raised black (panels, paper-in-the-dark)
-  graphite: '#5E5B57', // dim lines, secondary text
-  ash: '#9C978F', // mid grey
-  bone: '#EEE9DF', // paper white, primary text
-  signal: '#FF4D12', // hazard orange: the spark, the fuse, P(doom)
-  ember: '#FF8A3D', // hotter, lighter orange for cores/highlights
-  blood: '#C21D0B', // deep red-orange for shadows of signal
-  acid: '#D8FF3C', // acid: only for the shrooms moment
+  ink: '#0A0B0A', // background black (the device's graphite, slightly green-neutral)
+  ink2: '#141614', // raised black (panels, the screen when off)
+  graphite: '#5B5F5B', // dim lines, secondary text, the metal frame
+  ash: '#9A9F9A', // mid grey
+  bone: '#EEF0EC', // paper white, primary text
+  signal: '#44D62C', // OneKey green: the key, highlights, the sung word
+  ember: '#B1F4A9', // hot light green for cores/highlights (brand12, dark theme)
+  blood: '#108303', // deep green for shadows of signal (brand11)
+  acid: '#FFFFFF', // unused: reserved for one moment if the treatment ever needs it
 } as const;
 
 export type PaletteKey = keyof typeof HEX;

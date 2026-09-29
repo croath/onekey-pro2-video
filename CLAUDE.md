@@ -5,6 +5,9 @@ Code-rendered product video (TypeScript + three.js, bun + Vite). The engine come
 Read before any work:
 - `docs/TREATMENT.md` — the concept, style rules and per-plate brief. It is the spec: follow it, and when a decision changes, update it (add a line under 修订记录).
 - `docs/ENGINE.md` — the engine and scene API and the rules for scene authors.
+- `docs/SONG.md` — the soundtrack: lyrics, Suno prompt, song structure.
+
+NDA: `assets/reference/` holds photos of an unreleased device. Use them only as modelling reference; never render, embed, upload or publish them, and never make this repository public.
 
 Workflow:
 - One scene per file in `app/src/scenes/`; the edit lives in `app/src/timeline.ts`. Anchor times to caption lines and the beat grid, never hard-coded seconds.
