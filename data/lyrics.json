@@ -1,0 +1,159 @@
+{
+ "lines": [
+  {
+   "text": "OneKey Pro 2",
+   "start": 2,
+   "end": 3.45,
+   "words": [
+    {
+     "w": "OneKey",
+     "start": 2,
+     "end": 2.45
+    },
+    {
+     "w": "Pro",
+     "start": 2.5,
+     "end": 2.95
+    },
+    {
+     "w": "2",
+     "start": 3.0,
+     "end": 3.45
+    }
+   ]
+  },
+  {
+   "text": "Your keys. Offline.",
+   "start": 8,
+   "end": 9.45,
+   "words": [
+    {
+     "w": "Your",
+     "start": 8,
+     "end": 8.45
+    },
+    {
+     "w": "keys.",
+     "start": 8.5,
+     "end": 8.95
+    },
+    {
+     "w": "Offline.",
+     "start": 9.0,
+     "end": 9.45
+    }
+   ]
+  },
+  {
+   "text": "[selling point 1]",
+   "start": 14,
+   "end": 15.45,
+   "words": [
+    {
+     "w": "[selling",
+     "start": 14,
+     "end": 14.45
+    },
+    {
+     "w": "point",
+     "start": 14.5,
+     "end": 14.95
+    },
+    {
+     "w": "1]",
+     "start": 15.0,
+     "end": 15.45
+    }
+   ]
+  },
+  {
+   "text": "[selling point 2]",
+   "start": 24,
+   "end": 25.45,
+   "words": [
+    {
+     "w": "[selling",
+     "start": 24,
+     "end": 24.45
+    },
+    {
+     "w": "point",
+     "start": 24.5,
+     "end": 24.95
+    },
+    {
+     "w": "2]",
+     "start": 25.0,
+     "end": 25.45
+    }
+   ]
+  },
+  {
+   "text": "[selling point 3]",
+   "start": 32,
+   "end": 33.45,
+   "words": [
+    {
+     "w": "[selling",
+     "start": 32,
+     "end": 32.45
+    },
+    {
+     "w": "point",
+     "start": 32.5,
+     "end": 32.95
+    },
+    {
+     "w": "3]",
+     "start": 33.0,
+     "end": 33.45
+    }
+   ]
+  },
+  {
+   "text": "[selling point 4]",
+   "start": 40,
+   "end": 41.45,
+   "words": [
+    {
+     "w": "[selling",
+     "start": 40,
+     "end": 40.45
+    },
+    {
+     "w": "point",
+     "start": 40.5,
+     "end": 40.95
+    },
+    {
+     "w": "4]",
+     "start": 41.0,
+     "end": 41.45
+    }
+   ]
+  },
+  {
+   "text": "OneKey Pro 2",
+   "start": 50,
+   "end": 51.45,
+   "words": [
+    {
+     "w": "OneKey",
+     "start": 50,
+     "end": 50.45
+    },
+    {
+     "w": "Pro",
+     "start": 50.5,
+     "end": 50.95
+    },
+    {
+     "w": "2",
+     "start": 51.0,
+     "end": 51.45
+    }
+   ]
+  }
+ ],
+ "notes": "PLACEHOLDER captions / voice-over. Word timings are on the beat grid. Replace with the real script (and forced-aligned timings if there is a voice-over)."
+}
