@@ -14,7 +14,8 @@ import { rgba } from '../engine/palette';
 import { F, font } from '../engine/type';
 import { Lyrics, type Line } from '../engine/lyrics';
 import { clamp, ease, hash, lerp, prog } from '../engine/util';
-import { DEVICE, devicePath, keyHead2D, lyricLine, qrMatrix } from './_motifs';
+import { DEVICE, devicePath, lyricLine, qrMatrix } from './_motifs';
+import { BEZEL, Device3D, SCREEN, orbit, type DevicePose } from './_device3d';
 
 const ink = (a = 1) => rgba('ink', a);
 const QR = qrMatrix(7);
@@ -50,7 +51,59 @@ function drawQR(c: CanvasRenderingContext2D, m: boolean[][], x0: number, y0: num
   }
 }
 
+/** The review screen in the device's own pixels (SCREEN): the transaction typed row by row (`frac` of
+ * the sung words so far), and a slide-to-confirm track whose knob slides left to right (`slide`). */
+function reviewScreen(c: CanvasRenderingContext2D, frac: number, slide: number) {
+  const sw = SCREEN.w, sh = SCREEN.h, pad = 44;
+  c.fillStyle = rgba('ink');
+  c.fillRect(0, 0, sw, sh);
+  c.font = font(F.mono(400), 28);
+  c.fillStyle = rgba('ash', 0.85);
+  c.fillText('Review transaction', pad, 110);
+  const rows = TX.length;
+  for (let r = 0; r < rows; r++) {
+    const k = clamp(frac * (rows + 0.6) - r);
+    if (k <= 0) continue;
+    const y = 230 + r * 150;
+    c.font = font(F.mono(400), 30);
+    c.fillStyle = rgba('ash', 0.9);
+    c.fillText(TX[r]!.label, pad, y);
+    const v = TX[r]!.value;
+    c.font = font(F.mono(500), 54);
+    c.fillStyle = rgba('bone');
+    c.fillText(v.slice(0, Math.ceil(v.length * k)), pad, y + 62);
+  }
+  // slide to confirm
+  const tw = sw - 2 * pad, th = 104, ty = sh - pad - th - 20, r = th / 2;
+  const kx = pad + r + (tw - th) * slide;
+  c.fillStyle = 'rgba(38,42,39,1)';
+  c.beginPath(); c.roundRect(pad, ty, tw, th, r); c.fill();
+  // the track fills green behind the knob
+  if (slide > 0) {
+    c.fillStyle = rgba('signal', 0.35 + 0.65 * (slide >= 1 ? 1 : 0));
+    c.beginPath(); c.roundRect(pad, ty, kx - pad + r, th, r); c.fill();
+  }
+  c.font = font(F.archivo(100, 700), 36);
+  const label = slide >= 1 ? 'Confirmed' : 'Slide to confirm';
+  const lw = c.measureText(label).width;
+  c.fillStyle = slide >= 1 ? rgba('ink') : rgba('ash', 0.9 * (1 - slide));
+  c.fillText(label, pad + (tw - lw) / 2 + (slide >= 1 ? 0 : r * 0.6), ty + th / 2 + 13);
+  // the knob, with a chevron
+  c.fillStyle = slide >= 1 ? rgba('ink') : rgba('bone');
+  c.beginPath(); c.arc(kx, ty + r, r - 10, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = slide >= 1 ? rgba('signal') : rgba('ink');
+  c.lineWidth = 6;
+  c.lineCap = 'round';
+  c.beginPath();
+  if (slide >= 1) { c.moveTo(kx - 16, ty + r + 2); c.lineTo(kx - 4, ty + r + 14); c.lineTo(kx + 18, ty + r - 12); }
+  else { c.moveTo(kx - 6, ty + r - 14); c.lineTo(kx + 8, ty + r); c.lineTo(kx - 6, ty + r + 14); }
+  c.stroke();
+  c.lineCap = 'butt';
+}
+
 export default class Airgap extends Scene {
+  dev = new Device3D();
+  bg = new Layer2D();
   text = new Layer2D();
   L: Line[] = [];
 
@@ -66,6 +119,7 @@ export default class Airgap extends Scene {
     const c2 = cutAt(l2), c3 = cutAt(l3);
     const wd = (l: Line, q: string) => l.words.find((w) => w.w.toLowerCase().startsWith(q))!;
     const c = this.text.ctx;
+    if (t >= c3) return this.review(f, out, l3, l4);
     this.text.clear(rgba('bone'));
 
     // paper grid
@@ -77,14 +131,14 @@ export default class Airgap extends Scene {
     c.stroke();
 
     // ---- the device: left third, then (lines 3–4) to centre and larger
-    const toC = prog(t, c3 - 0.1, c3 + 0.45, ease.inOutCubic);
+    const toC = 0;
     const dx = lerp(W * 0.3, W * 0.5, toC), dy = lerp(H * 0.43, H * 0.43, toC), dw = lerp(330, 430, toC);
     const dh = dw * DEVICE.h;
     const dev = devicePath(dx, dy, dw);
     c.fillStyle = rgba('bone');
     c.fill(dev);
     // the screen (inset), dark once it has something to say
-    const inset = dw * 0.06;
+    const inset = dw * BEZEL;
     const scr = devicePath(dx, dy, dw - 2 * inset);
     const sh = (dw - 2 * inset) * DEVICE.h;
     const sx0 = dx - (dw - 2 * inset) / 2, sy0 = dy - sh / 2;
@@ -160,46 +214,6 @@ export default class Airgap extends Scene {
         c.globalAlpha = 1;
         drawQR(c, QR_OUT, dx - qs / 2, dy - qs / 2, qs, ks, ink(0.95));
       }
-    } else {
-      // plain-type transaction, word by word with lines 3–4
-      const words = [...l3.words, ...l4.words];
-      let sung = 0;
-      for (const w of words) sung += Lyrics.wordProgress(w, t) > 0 ? 1 : 0;
-      const frac = sung / words.length;
-      const rows = TX.length;
-      const pad = 26;
-      c.font = font(F.mono(400), 20);
-      c.fillStyle = rgba('ash', 0.8);
-      c.fillText('Review transaction', sx0 + pad, sy0 + pad + 58);
-      for (let r = 0; r < rows; r++) {
-        const k = clamp(frac * (rows + 0.6) - r); // each row types as its share of words is sung
-        if (k <= 0) continue;
-        const y = sy0 + 150 + r * 108;
-        c.font = font(F.mono(400), 22);
-        c.fillStyle = rgba('ash', 0.85);
-        c.fillText(TX[r]!.label, sx0 + pad, y);
-        const v = TX[r]!.value;
-        c.font = font(F.mono(500), 40);
-        c.fillStyle = rgba('bone');
-        c.fillText(v.slice(0, Math.ceil(v.length * k)), sx0 + pad, y + 42);
-      }
-      // "Confirm" lights on "type"
-      const type = wd(l4, 'type');
-      const kc = prog(t, type.start, type.start + 0.25, ease.outCubic);
-      const bw = dw - 2 * inset - 2 * pad, bh = 64, by = sy0 + sh - pad - bh;
-      c.strokeStyle = rgba('graphite', 1);
-      c.lineWidth = 1.5;
-      c.beginPath(); c.roundRect(sx0 + pad, by, bw, bh, 32); c.stroke();
-      if (kc > 0) {
-        c.globalAlpha = kc;
-        c.fillStyle = rgba('signal');
-        c.beginPath(); c.roundRect(sx0 + pad, by, bw, bh, 32); c.fill();
-        c.globalAlpha = 1;
-      }
-      c.font = font(F.archivo(100, 700), 28);
-      c.fillStyle = kc > 0.5 ? ink() : rgba('ash', 0.9);
-      const tw = c.measureText('Confirm').width;
-      c.fillText('Confirm', sx0 + pad + (bw - tw) / 2, by + 42);
     }
     c.restore();
 
@@ -298,14 +312,51 @@ export default class Airgap extends Scene {
       c.globalAlpha = 1;
     }
 
-    // ---- the key: green, inside the outline (top of the screen area, above the content)
-    keyHead2D(c, dx, sy0 + 24, 0.5, 0.75 + 0.25 * f.a.kick);
 
     // ---- the sung line
-    const line = t < c2 ? l1 : t < c3 ? l2 : t < cutAt(l4) ? l3 : l4;
+    const line = t < c2 ? l1 : l2;
     lyricLine(c, line, t, 120, H - 90, { family: F.archivo(100, 800), size: 72, on: ink(), off: ink(0.28) });
 
     comp.draw(renderer, this.text.upload(), out);
     return { bloom: 0.12, vignette: 0.18, halation: 0 };
+  }
+
+  /** Lines 3–4, the real device on ink: the screen types the transaction in plain words, word by word
+   * with the singing, and the knob slides across to confirm, landing on "type". The sung lines are set
+   * large on the left. */
+  review(f: Frame, out: THREE.WebGLRenderTarget, l3: Line, l4: Line) {
+    const { renderer, comp, audio } = this.ctx;
+    const t = f.t;
+    const c3 = audio.timeOfBeat(Math.floor(audio.beatAt(l3.words[0]!.start + 0.02)));
+    const words = [...l3.words, ...l4.words];
+    let sung = 0;
+    for (const w of words) sung += Lyrics.wordProgress(w, t) > 0 ? 1 : 0;
+    const type = l4.words.find((w) => w.w.toLowerCase().startsWith('type'))!;
+    const slide = prog(t, type.start - 0.45, type.start + 0.05, ease.inOutCubic);
+    reviewScreen(this.dev.screen.ctx, sung / words.length, slide);
+    const k = prog(t, c3, this.ctx.end);
+    const T: [number, number, number] = [0, -0.02, 0];
+    const pose: DevicePose = {
+      cam: orbit(T, lerp(4.35, 4.15, ease.inOutQuad(k)), lerp(-0.2, -0.08, ease.inOutQuad(k)), 0.06), tgt: T, fov: 0.5,
+      pos: [0.9, 0, 0], rot: [0, 0, 0], screen: 1, sweep: lerp(-1.4, 1.4, prog(t, type.start - 0.2, type.start + 1.2, ease.inOutCubic)),
+    };
+    this.bg.clear(rgba('ink'));
+    const b = this.bg.ctx;
+    const g = b.createRadialGradient(W * 0.64, H / 2, 0, W * 0.64, H / 2, H * 0.8);
+    g.addColorStop(0, 'rgba(24,27,25,1)');
+    g.addColorStop(1, rgba('ink'));
+    b.fillStyle = g;
+    b.fillRect(0, 0, W, H);
+    comp.draw(renderer, this.bg.upload(), out, { mode: 'replace' });
+    comp.draw(renderer, this.dev.render(renderer, pose), out);
+    // the two lines, large, left
+    const c = this.text.ctx;
+    this.text.clear();
+    const fam = F.archivo(100, 800);
+    lyricLine(c, l3, t, 120, H * 0.44, { family: fam, size: 68, on: rgba('bone'), off: rgba('bone', 0.25) });
+    lyricLine(c, l4, t, 120, H * 0.44 + 100, { family: fam, size: 68, on: rgba('bone'), off: rgba('bone', 0.25) });
+    comp.draw(renderer, this.text.upload(), out);
+    const flash = t >= type.start + 0.05 ? 0.05 * Math.pow(0.5, (t - type.start - 0.05) / 0.05) : 0;
+    return { bloom: 0.45, vignette: 0.4, flash };
   }
 }

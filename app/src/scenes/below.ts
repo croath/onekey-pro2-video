@@ -1,232 +1,205 @@
-// `below` (verse 1, lines 5–6) — docs/TREATMENT.md:
-//   "Quiet by design, no edges to show": the front, screen off; a white hairline traces the outline
-//     — the first appearance of the BOUNDARY motif — and a `boundary` callout lands on "edges".
-//   "Everything that matters stays down below": hard cut to bone blueprint paper; the camera sinks
-//     through the device one layer per bar (cover glass, display, mainboard, shield) down to one small
-//     cell, the secure element, where the green key sits: `private key · never leaves`.
-//   The key stays at frame centre for the hand-off to `airgap`.
+// `below` (verse 1, lines 5–6) — docs/TREATMENT.md, the real device on ink:
+//   "Quiet by design, no edges to show": the front, screen off, turning slowly; a white hairline
+//     traces its outline — the first appearance of the BOUNDARY motif — and a `boundary` callout lands
+//     on "edges".
+//   "Everything that matters stays down below": the device lies down and comes apart, layer by layer
+//     (cover glass, display, main board, frame, battery, back glass), labelled on the right; the sung
+//     line is set down the stack on the left, "stays down below" level with the main board. The top
+//     layers lift away and the camera drops onto the board: four secure elements light up, the green
+//     key sits in one of them: `private key · never leaves`. It ends with the key at frame centre for
+//     the hand-off to `airgap`.
 import type * as THREE from 'three';
 import { Scene, type Frame } from '../engine/scene';
 import { Layer2D, W, H } from '../engine/gl';
 import { rgba } from '../engine/palette';
 import { F, font } from '../engine/type';
 import type { Line } from '../engine/lyrics';
-import { clamp, ease, hash, lerp, prog } from '../engine/util';
-import { DEVICE, devicePath, devicePerimeter, keyHead2D, lyricLine } from './_motifs';
+import { Lyrics } from '../engine/lyrics';
+import { clamp, ease, lerp, prog } from '../engine/util';
+import { DEVICE, keyHead2D, lyricLine } from './_motifs';
+import { Device3D, EXPLODE_Z, PART_Z, SE_POS, orbit, outline, type DevicePose, type V3 } from './_device3d';
 
-const CX = W / 2, CY = H * 0.44;
-const DW = 400; // device width in px at scale 1 (same on paper as on the black front)
-
-/** The layers the camera sinks through, at depth z (the outline at z=1 is the device itself). */
-const LAYERS = [
-  { z: 1, name: '01  cover glass', kind: 'glass' },
-  { z: 2, name: '02  display', kind: 'display' },
-  { z: 3, name: '03  mainboard', kind: 'board' },
-  { z: 4, name: '04  shield', kind: 'shield' },
-] as const;
-const SE_Z = 5; // the secure element's cell
-const SE_W = 0.34; // its size in device widths
+const PARTS = ['cover glass', 'display', 'main board', 'battery', 'frame', 'back glass'];
+/** Draw order of the labels, top of the stack down (by explode offset). */
+const ORDER = [0, 1, 2, 4, 3, 5];
+const KEY_SE = 1; // the secure element that holds the key
 
 export default class Below extends Scene {
+  dev = new Device3D();
+  bg = new Layer2D();
   text = new Layer2D();
   L: Line[] = [];
+  outl = outline(160, 0.035);
 
   override init() {
     this.L = ['Quiet by design', 'Everything that matters'].map((q) => this.ctx.lyrics.get(q));
   }
 
+  /** Part i's centre (device space) at a given explode and lift. */
+  partAt(i: number, explode: number, lift: number): V3 {
+    return [0, i === 2 ? 0.02 : 0, PART_Z[i]! + EXPLODE_Z[i]! * explode + (i < 2 ? lift : 0)];
+  }
+
   render(f: Frame, out: THREE.WebGLRenderTarget) {
     const { renderer, comp, audio } = this.ctx;
     const [l1, l2] = this.L as [Line, Line];
+    const t = f.t;
     const cB = audio.timeOfBeat(Math.floor(audio.beatAt(l2.words[0]!.start + 0.02)));
     const c = this.text.ctx;
+    this.text.clear();
+    this.bg.clear(rgba('ink'));
+    const b = this.bg.ctx;
+    const g = b.createRadialGradient(W / 2, H * 0.45, 0, W / 2, H * 0.45, H * 0.85);
+    g.addColorStop(0, 'rgba(24,27,25,1)');
+    g.addColorStop(1, rgba('ink'));
+    b.fillStyle = g;
+    b.fillRect(0, 0, W, H);
+    comp.draw(renderer, this.bg.upload(), out, { mode: 'replace' });
 
-    if (f.t < cB) {
+    if (t < cB) {
       // ---------------------------------------------------------------- the front, screen off
-      this.text.clear(rgba('ink'));
-      const dev = devicePath(CX, CY, DW);
-      const h = DW * DEVICE.h;
-      // black glass: a faint vertical sheen and one soft diagonal reflection that drifts with time
-      const g = c.createLinearGradient(CX - DW / 2, CY - h / 2, CX + DW / 2, CY + h / 2);
-      const s = 0.3 + 0.1 * prog(f.t, this.ctx.start, cB);
-      g.addColorStop(0, rgba('ink2', 1));
-      g.addColorStop(clamp(s - 0.08), rgba('ink2', 1));
-      g.addColorStop(s, 'rgba(38,42,39,1)');
-      g.addColorStop(clamp(s + 0.1), rgba('ink2', 1));
-      g.addColorStop(1, 'rgba(12,13,12,1)');
-      c.fillStyle = g;
-      c.fill(dev);
-      // the frame, barely there
-      c.lineWidth = 3;
-      c.strokeStyle = 'rgba(60,64,61,1)';
-      c.stroke(dev);
-
+      const k = prog(t, this.ctx.start, cB);
+      const T: V3 = [0, 0.05, 0];
+      const pose: DevicePose = { cam: orbit(T, lerp(4.3, 4.0, k), lerp(0.34, 0.12, ease.inOutQuad(k)), 0.1), tgt: T, fov: 0.6, rot: [0, 0, 0], sweep: lerp(-1.4, 1.4, k) };
+      comp.draw(renderer, this.dev.render(renderer, pose), out);
       // the boundary: a white hairline traces the outline from "Quiet" to "show"
       const w0 = l1.words[0]!, wEnd = l1.words[l1.words.length - 1]!;
-      const k = prog(f.t, w0.start, wEnd.end, ease.inOutCubic);
-      if (k > 0) {
-        const P = devicePerimeter(DW);
-        c.save();
-        c.setLineDash([P * k, P * 2]);
-        c.lineWidth = 1.6;
+      const kk = prog(t, w0.start, wEnd.end, ease.inOutCubic);
+      const pts = this.outl.map((q) => this.dev.project(pose, q));
+      if (kk > 0) {
+        const n = Math.floor(kk * pts.length);
         c.strokeStyle = rgba('bone', 0.95);
-        c.stroke(dev);
-        c.restore();
+        c.lineWidth = 1.6;
+        c.beginPath();
+        // start at the top centre, clockwise on screen
+        const i0 = Math.floor(pts.length * 0.125);
+        for (let j = 0; j <= n && j <= pts.length; j++) {
+          const p = pts[(i0 - j + pts.length * 4) % pts.length]!;
+          if (j === 0) c.moveTo(p.x, p.y); else c.lineTo(p.x, p.y);
+        }
+        c.stroke();
       }
-      // callout on "edges"
+      // callout on "edges": from the right edge
       const edges = l1.words.find((w) => w.w.startsWith('edges'))!;
-      const kc = prog(f.t, edges.start - 0.05, edges.start + 0.4, ease.outExpo);
+      const kc = prog(t, edges.start - 0.05, edges.start + 0.4, ease.outExpo);
       if (kc > 0) {
-        const ax = CX + DW / 2, ay = CY - h * 0.18, bx = ax + lerp(0, 150, kc);
+        const a = this.dev.project(pose, [DEVICE.w / 2 + 0.01, 0.3, 0]);
+        const bx = a.x + lerp(0, 160, kc);
         c.strokeStyle = rgba('bone', 0.8);
         c.lineWidth = 1.2;
-        c.beginPath(); c.moveTo(ax + 8, ay); c.lineTo(bx, ay); c.stroke();
+        c.beginPath(); c.moveTo(a.x + 8, a.y); c.lineTo(bx, a.y); c.stroke();
         c.fillStyle = rgba('bone', 0.9 * kc);
-        c.beginPath(); c.arc(ax, ay, 3, 0, Math.PI * 2); c.fill();
-        c.font = font(F.mono(400), 22);
-        c.fillText('boundary', bx + 14, ay + 7);
+        c.beginPath(); c.arc(a.x, a.y, 3, 0, Math.PI * 2); c.fill();
+        c.font = font(F.mono(400), 24);
+        c.fillText('boundary', bx + 14, a.y + 8);
       }
-      // the key, idling inside
-      keyHead2D(c, CX, CY, 0.55, 0.55 + 0.35 * f.a.kick);
-
-      lyricLine(c, l1, f.t, 120, H - 110, { family: F.archivo(100, 800), size: 72, on: rgba('bone'), off: rgba('bone', 0.3) });
+      lyricLine(c, l1, t, 120, H - 110, { family: F.archivo(100, 800), size: 72, on: rgba('bone'), off: rgba('bone', 0.3) });
       comp.draw(renderer, this.text.upload(), out);
       return { bloom: 0.45, vignette: 0.4 };
     }
 
-    // ---------------------------------------------------------------- blueprint: sinking through the layers
-    this.text.clear(rgba('bone'));
-    const b = f.bar - audio.barAt(cB);
-    // one layer per bar, each step landing just after the downbeat; the last step settles on the cell
-    const steps = [1, 1, 1, 1.5];
-    let d = 0;
-    steps.forEach((inc, i) => (d += inc * prog(b, i + 0.8 - 0.35, i + 0.8 + 0.3, ease.inOutCubic)));
-    
-    // paper grid
-    c.strokeStyle = rgba('ash', 0.18);
-    c.lineWidth = 1;
-    const gs = 48;
-    c.beginPath();
-    for (let x = (CX % gs); x < W; x += gs) { c.moveTo(x, 0); c.lineTo(x, H); }
-    for (let y = (CY % gs); y < H; y += gs) { c.moveTo(0, y); c.lineTo(W, y); }
-    c.stroke();
+    // ---------------------------------------------------------------- exploded, then down to the board
+    const bar = f.bar - audio.barAt(cB);
+    const lie = prog(bar, 0, 0.7, ease.inOutCubic); // the device lies down, display up
+    const explode = 1.7 * prog(bar, 0.35, 2.1, ease.inOutCubic);
+    const dive = prog(bar, 2.6, 4.1, ease.inOutCubic);
+    const lift = dive * 2.2;
+    const rot: V3 = [lerp(0, 0.5, lie), lerp(0, -Math.PI / 2, lie), 0];
+    // the key's secure element, in device space, and where the camera ends up
+    const seP: V3 = [SE_POS[KEY_SE]![0], SE_POS[KEY_SE]![1] + 0.02, PART_Z[2]! + EXPLODE_Z[2]! * explode + 0.024];
+    const baseT: V3 = [0, 0.05, 0];
+    const seW = this.worldOf(rot, seP);
+    const tgt: V3 = [lerp(baseT[0], seW[0], dive), lerp(baseT[1], seW[1], dive), lerp(baseT[2], seW[2], dive)];
+    const cam = orbit(tgt, lerp(6.4, 0.95, dive), lerp(0.55, 0.25, dive), lerp(lerp(0.1, 0.36, lie), 1.05, dive));
+    const seOn = (i: number) => prog(bar, 2.9 + i * 0.25, 3.1 + i * 0.25, ease.outCubic) * (i === KEY_SE ? 0.7 : 0.35);
+    const pose: DevicePose = {
+      cam, tgt, fov: 0.6, rot, explode, lift, sweep: lerp(1.5, -1.5, prog(bar, 0.3, 2.3)),
+      se: [seOn(0), seOn(1), seOn(2), seOn(3)],
+    };
+    comp.draw(renderer, this.dev.render(renderer, pose), out);
 
-    const ink = (a: number) => rgba('ink', a);
-    // far to near so near layers draw on top
-    for (let i = LAYERS.length - 1; i >= 0; i--) {
-      const Ly = LAYERS[i]!;
-      const dz = Ly.z - d;
-      if (dz <= 0.08) continue;
-      const s = 1 / dz;
-      const a = clamp((4.5 - s) / 2.5) * clamp(s * 3); // fade as it rushes past, and in the far distance
-      if (a <= 0.01) continue;
-      const w = DW * s;
-      const p = devicePath(CX, CY, w);
-      const hh = w * DEVICE.h;
-      c.save();
-      c.globalAlpha = a;
-      c.lineWidth = 1.5;
-      c.strokeStyle = ink(0.9);
-      c.stroke(p);
-      c.clip(p);
-      c.lineWidth = 1;
-      if (Ly.kind === 'display') {
-        c.strokeStyle = ink(0.16);
-        const st = 16 * s;
-        c.beginPath();
-        for (let x = CX - w / 2; x < CX + w / 2; x += st) { c.moveTo(x, CY - hh / 2); c.lineTo(x, CY + hh / 2); }
-        for (let y = CY - hh / 2; y < CY + hh / 2; y += st) { c.moveTo(CX - w / 2, y); c.lineTo(CX + w / 2, y); }
-        c.stroke();
-      } else if (Ly.kind === 'board') {
-        // orthogonal traces, deterministic
-        c.strokeStyle = ink(0.55);
-        for (let n = 0; n < 42; n++) {
-          let x = CX + (hash(n, 3) - 0.5) * w * 0.9, y = CY + (hash(n, 4) - 0.5) * hh * 0.9;
-          c.beginPath(); c.moveTo(x, y);
-          for (let k = 0; k < 3; k++) {
-            if ((n + k) % 2) x += (hash(n, k, 5) - 0.5) * w * 0.5; else y += (hash(n, k, 6) - 0.5) * hh * 0.4;
-            c.lineTo(x, y);
-          }
-          c.stroke();
-          c.fillStyle = ink(0.7);
-          c.beginPath(); c.arc(x, y, 2.2 * Math.sqrt(s), 0, Math.PI * 2); c.fill();
-        }
-        // a few chips
-        for (let n = 0; n < 5; n++) {
-          const cw = w * (0.12 + 0.1 * hash(n, 7)), ch = cw * (0.6 + 0.5 * hash(n, 8));
-          const x = CX + (hash(n, 9) - 0.5) * w * 0.6, y = CY + (hash(n, 10) - 0.5) * hh * 0.7;
-          c.fillStyle = rgba('bone');
-          c.fillRect(x - cw / 2, y - ch / 2, cw, ch);
-          c.strokeStyle = ink(0.8);
-          c.strokeRect(x - cw / 2, y - ch / 2, cw, ch);
-        }
-      } else if (Ly.kind === 'shield') {
-        c.strokeStyle = ink(0.22);
-        const st = 22 * s;
-        c.beginPath();
-        for (let x = -hh; x < w + hh; x += st) { c.moveTo(CX - w / 2 + x, CY - hh / 2); c.lineTo(CX - w / 2 + x - hh, CY + hh / 2); }
-        c.stroke();
-        // the window in the shield the camera falls through
-        const sw = w * SE_W * 1.5;
-        c.fillStyle = rgba('bone');
-        c.fillRect(CX - sw / 2, CY - sw / 2, sw, sw);
-        c.strokeStyle = ink(0.8);
-        c.strokeRect(CX - sw / 2, CY - sw / 2, sw, sw);
-      }
-      c.restore();
-      // layer label, outside the clip, at the top-left corner
-      c.globalAlpha = a * clamp((s - 0.55) / 0.2); // only the layers near us are labelled
-      c.fillStyle = ink(0.85);
-      c.font = font(F.mono(400), 20);
-      c.fillText(Ly.name, CX - w / 2, CY - hh / 2 - 14);
-      c.globalAlpha = 1;
+    // part labels on the right, while the stack is apart and the camera is back
+    const la = prog(bar, 0.8, 1.6) * (1 - prog(bar, 2.5, 2.8));
+    if (la > 0) {
+      ORDER.forEach((i, j) => {
+        const kj = prog(bar, 0.8 + j * 0.18, 1.1 + j * 0.18, ease.outCubic) * (1 - prog(bar, 2.5, 2.8));
+        if (kj <= 0) return;
+        const pc = this.partAt(i, explode, lift);
+        const a = this.dev.project(pose, [DEVICE.w / 2 + 0.02, 0, pc[2]]);
+        const x1 = W * 0.7;
+        c.globalAlpha = kj;
+        c.strokeStyle = rgba('bone', 0.6);
+        c.lineWidth = 1;
+        c.beginPath(); c.moveTo(a.x + 10, a.y); c.lineTo(lerp(a.x + 10, x1, kj), a.y); c.stroke();
+        c.fillStyle = rgba('bone', 0.9);
+        c.beginPath(); c.arc(a.x + 6, a.y, 2.5, 0, Math.PI * 2); c.fill();
+        c.font = font(F.mono(400), 22);
+        c.fillStyle = i === 2 ? rgba('signal') : rgba('bone', 0.85);
+        c.fillText(`0${j + 1}  ${PARTS[i]}`, x1 + 14, a.y + 7);
+        c.globalAlpha = 1;
+      });
     }
 
-    // the secure element cell with the key inside
-    {
-      const dz = SE_Z - d, s = 1 / Math.max(dz, 0.3);
-      const a = clamp(s * 3);
-      const w = DW * SE_W * s;
-      c.globalAlpha = a;
-      c.fillStyle = rgba('bone');
-      c.fillRect(CX - w / 2, CY - w / 2, w, w);
-      c.lineWidth = 1.5;
-      c.strokeStyle = ink(0.95);
-      c.strokeRect(CX - w / 2, CY - w / 2, w, w);
-      // pins
-      c.lineWidth = 1;
-      const np = 7;
-      c.beginPath();
-      for (let i = 0; i < np; i++) {
-        const u = -w / 2 + (w * (i + 0.5)) / np, L = w * 0.08;
-        c.moveTo(CX + u, CY - w / 2); c.lineTo(CX + u, CY - w / 2 - L);
-        c.moveTo(CX + u, CY + w / 2); c.lineTo(CX + u, CY + w / 2 + L);
-        c.moveTo(CX - w / 2, CY + u); c.lineTo(CX - w / 2 - L, CY + u);
-        c.moveTo(CX + w / 2, CY + u); c.lineTo(CX + w / 2 + L, CY + u);
-      }
-      c.stroke();
-      c.fillStyle = ink(0.8);
-      c.font = font(F.mono(500), Math.max(10, 0.11 * w));
-      c.fillText('SE', CX - w / 2 + 0.07 * w, CY - w / 2 + 0.17 * w);
-      c.globalAlpha = 1;
-      // the key: green only here, inside the cell
+    // the sung line, set down the stack on the left: "Everything" / "that matters" / "stays down below"
+    const groups = [[0], [1, 2], [3, 4, 5]];
+    const anchor = [0, 1, 2];
+    const words = l2.words;
+    const stack = prog(explode, 0.5, 1.1);
+    const wa = (1 - prog(bar, 2.6, 3.0)) * stack;
+    if (stack < 1) lyricLine(c, l2, t, 120, H - 110, { family: F.archivo(100, 800), size: 72, on: rgba('bone'), off: rgba('bone', 0.3), alpha: 1 - stack });
+    if (wa > 0) {
+      c.font = font(F.archivo(100, 800), 64);
+      groups.forEach((gi, j) => {
+        const pc = this.partAt(anchor[j]!, explode, lift);
+        const a = this.dev.project(pose, [-DEVICE.w / 2 - 0.02, 0, pc[2]]);
+        const txt = gi.map((i) => words[i]!.w).join(' ');
+        const tw = c.measureText(txt).width;
+        let x = Math.min(a.x - 60, W * 0.36) - tw;
+        const y = a.y + 22;
+        gi.forEach((i) => {
+          const w = words[i]!;
+          const k = Lyrics.wordProgress(w, t);
+          c.globalAlpha = wa;
+          c.fillStyle = k > 0 ? (j === 2 ? rgba('signal') : rgba('bone')) : rgba('bone', 0.28);
+          const y2 = y - (k > 0 ? (1 - ease.outExpo(clamp(k * 4))) * 10 : 0);
+          c.fillText(w.w, x, y2);
+          x += c.measureText(w.w + ' ').width;
+        });
+        c.globalAlpha = 1;
+      });
+    }
+
+    // the key: in its secure element, green, once the chips light
+    const kp = this.dev.project(pose, seP);
+    const kOn = prog(bar, 3.1, 3.5, ease.outCubic);
+    if (kOn > 0) {
       const kk = 0.7 + 0.3 * f.a.kick;
-      keyHead2D(c, CX, CY, lerp(0.6, 2.2, clamp(s / 2)), kk * a);
-      keyHead2D(c, CX, CY, lerp(0.25, 0.8, clamp(s / 2)), kk * a);
-      // callout once the cell has arrived
-      const kc = prog(b, 3.95, 4.3, ease.outExpo);
+      keyHead2D(c, kp.x, kp.y, lerp(1.2, 3.2, dive), kk * kOn);
+      keyHead2D(c, kp.x, kp.y, 1.0, kk * kOn);
+      keyHead2D(c, kp.x, kp.y, 0.5, kk * kOn);
+      const kc = prog(bar, 3.7, 4.1, ease.outExpo);
       if (kc > 0) {
-        const ax = CX + w / 2 + w * 0.1, ay = CY - w * 0.3, bx = ax + 170 * kc;
-        c.strokeStyle = ink(0.85);
+        const ax = kp.x + 60, ay = kp.y - 190, bx = ax + 170 * kc;
+        c.strokeStyle = rgba('bone', 0.85);
+        c.lineWidth = 1.2;
         c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, ay); c.stroke();
-        c.fillStyle = ink(0.9 * kc);
-        c.font = font(F.mono(500), 24);
+        c.fillStyle = rgba('bone', 0.95 * kc);
+        c.font = font(F.mono(500), 26);
         c.fillText('private key · never leaves', bx + 14, ay + 8);
       }
     }
-
-    lyricLine(c, l2, f.t, 120, H - 110, { family: F.archivo(100, 800), size: 72, on: rgba('ink'), off: rgba('ink', 0.28) });
     comp.draw(renderer, this.text.upload(), out);
-    return { bloom: 0.12, vignette: 0.18, halation: 0 };
+    return { bloom: 0.45, vignette: 0.4 };
+  }
+
+  /** Device-space point to world, for a rotation (scale 1, at the origin). */
+  worldOf(rot: V3, q: V3): V3 {
+    const [yaw, pitch, roll] = rot;
+    // R = Ry * Rx * Rz
+    let [x, y, z] = q;
+    [x, y] = [Math.cos(roll) * x - Math.sin(roll) * y, Math.sin(roll) * x + Math.cos(roll) * y];
+    [y, z] = [Math.cos(pitch) * y - Math.sin(pitch) * z, Math.sin(pitch) * y + Math.cos(pitch) * z];
+    [x, z] = [Math.cos(yaw) * x + Math.sin(yaw) * z, -Math.sin(yaw) * x + Math.cos(yaw) * z];
+    return [x, y, z];
   }
 }

@@ -25,9 +25,13 @@ export function makeTimeline(ly: Lyrics, au: AudioData): TimelineEntry[] {
     return au.timeOfBeat(Math.floor(au.beatAt(s + 0.02)));
   };
 
+  /** Start of the instrumental break after chorus 2 (a downbeat). */
+  const brk = au.sections.find((s) => s.name === 'break')?.start ?? cut('OneKey Pro 2');
+
   const E = (id: string, file: string, start: number, end: number, extra: Partial<TimelineEntry> = {}): TimelineEntry =>
     ({ id, load: scene(file), start, end, ...extra });
 
+  if (typeof location !== 'undefined' && location.search.includes('only=devtest')) return [E('devtest', 'devtest', 0, 8)]; // SCRATCH
   return [
     E('boot', 'boot', 0, cut('Glass on the front')),
     E('slab', 'slab', cut('Glass on the front'), cut('Quiet by design')),
@@ -39,7 +43,8 @@ export function makeTimeline(ly: Lyrics, au: AudioData): TimelineEntry[] {
     E('guard', 'guard', cut('Contract says'), cut('Touch to unlock')),
     E('touch', 'touch', cut('Touch to unlock'), cut("It's not just your coins")),
     E('passkey', 'passkey', cut("It's not just your coins"), cut('Keep your keys at home', 1)),
-    E('hook2', 'hook', cut('Keep your keys at home', 1), cut('OneKey Pro 2'), { params: { n: 2 } }),
-    E('end', 'end', cut('OneKey Pro 2'), au.duration),
+    // the real device takes over from the break after chorus 2 to the end
+    E('hook2', 'hook', cut('Keep your keys at home', 1), brk, { params: { n: 2 } }),
+    E('end', 'end', brk, au.duration),
   ];
 }
