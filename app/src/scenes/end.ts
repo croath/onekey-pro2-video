@@ -100,10 +100,15 @@ export default class End extends Scene {
         }
         if (i > 0) x += w + 40;
       });
+      // what it is, then the credit
       c.globalAlpha = nameOut * prog(t, words[2]!.end, words[2]!.end + 0.6);
-      c.font = font(F.mono(400), 26);
-      c.fillStyle = rgba('bone', 0.6);
-      c.fillText('53.1 × 84.9 × 6.2 mm  ·  keep your keys at home', x0 + 4, y0 + 70);
+      c.font = font(F.archivo(100, 500), 58);
+      c.fillStyle = rgba('bone', 0.85);
+      c.fillText('Hardware Wallet', x0 + 4, y0 + 88);
+      c.globalAlpha = nameOut * prog(t, words[2]!.end + 1.2, words[2]!.end + 2);
+      c.font = font(F.mono(400), 24);
+      c.fillStyle = rgba('bone', 0.45);
+      c.fillText('Video by Croath (Xiaoyu) & Claude', x0 + 6, y0 + 190);
       c.globalAlpha = 1;
     }
     if (screenOff) {

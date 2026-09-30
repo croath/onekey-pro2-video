@@ -21,7 +21,7 @@ import { F, font } from '../engine/type';
 import type { Line } from '../engine/lyrics';
 import { clamp, ease, hash, lerp, prog, springStep, TAU } from '../engine/util';
 import { DEVICE, keyMarkPath } from './_motifs';
-import { Device3D, SCREEN, orbit, outline, type DevicePose, type V3 } from './_device3d';
+import { Device3D, SCREEN, SCREEN_DU, orbit, outline, type DevicePose, type V3 } from './_device3d';
 import { add, camera3, fill3D, glow3D, lyric3D, onPlane, path3D, plane, rrect3D, studio, text3D, toW, type Plane } from './_space';
 
 const bone = (a = 1) => rgba('bone', a);
@@ -230,6 +230,10 @@ export default class Passkey extends Scene {
     const ph = wd(l4, 'phishing'), link = wd(l4, 'link');
     const lastW = l4.words[l4.words.length - 1]!;
     const lift = prog(t, lastW.end, this.ctx.end, ease.inCubic);
+    // the lift ends inside the key: the camera dives into the screen as it washes to bone, the light
+    // chorus 2 opens in (hook2 starts on a bone frame and lets it fade into its studio)
+    const dive = prog(t, lerp(lastW.end, this.ctx.end, 0.35), this.ctx.end, ease.inCubic);
+    const wash = prog(dive, 0.45, 0.92, ease.inOutQuad);
     void audio;
 
     // ---- the device
@@ -240,8 +244,14 @@ export default class Passkey extends Scene {
     const bounce = t > link.start ? Math.sin(Math.min(1, (t - link.start) / 0.25) * Math.PI) * Math.exp(-(t - link.start) / 0.5) : 0;
     const rebound = t > link.start ? ease.outCubic(prog(t, link.start, link.start + 0.6)) : 0;
     const T: V3 = [lerp(-0.2, 0, centre), 0.3 * centre, 0];
+    const KY = (0.5 - 0.36) * SCREEN_DU.h; // the key mark's centre on the screen (device y)
+    const kW: V3 = [0, 0.1 + KY, DEVICE.t / 2];
+    const cam0 = orbit(T, lerp(5.2, 5.3, prog(t, c3, this.ctx.end)), lerp(-0.12, 0, centre), 0.05);
+    const dd = Math.exp(lerp(Math.log(Math.hypot(cam0[0] - kW[0], cam0[1] - kW[1], cam0[2] - kW[2])), Math.log(0.12), dive));
+    const kd = ease.inOutCubic(prog(dive, 0, 0.5));
     const pose: DevicePose = {
-      cam: orbit(T, lerp(5.2, 5.3, prog(t, c3, this.ctx.end)), lerp(-0.12, 0, centre), 0.05), tgt: T, fov: 0.5,
+      cam: dive > 0 ? [lerp(cam0[0], kW[0], kd), lerp(cam0[1], kW[1], kd), kW[2] + dd] : cam0,
+      tgt: dive > 0 ? [lerp(T[0], kW[0], kd), lerp(T[1], kW[1], kd), lerp(T[2], kW[2], kd)] : T, fov: 0.5,
       pos: [lerp(0.95, 0, centre), lerp(-2.8, 0.1, rise) - bounce * 0.04, 0],
       rot: [lerp(-0.35, 0, centre), lerp(0.1, 0, rise), lerp(0.25, 0.04, rise)],
       scale: 1 - 0.06 * press + (t > tap.start ? (sp - 1) * 0.02 : 0),
@@ -250,6 +260,8 @@ export default class Passkey extends Scene {
     // its screen: the passkey prompt, then signed in
     const s = this.dev.screen.ctx;
     this.dev.screen.clear(rgba('ink'));
+    if (wash > 0) { s.fillStyle = `rgba(246,247,244,${wash})`; s.fillRect(0, 0, SCREEN.w, SCREEN.h); }
+    s.globalAlpha = 1 - wash;
     const signed = t >= inW.start;
     s.font = font(F.mono(500), 28);
     s.fillStyle = bone(0.55);
@@ -258,7 +270,7 @@ export default class Passkey extends Scene {
     s.fillStyle = rgba('signal');
     s.globalAlpha = 0.85 + 0.15 * f.a.kick;
     s.fill(keyMarkPath(SCREEN.w / 2, SCREEN.h * 0.36, mh), 'evenodd');
-    s.globalAlpha = 1;
+    s.globalAlpha = 1 - wash;
     s.font = font(F.archivo(100, 800), 60);
     s.fillStyle = bone();
     s.fillText(signed ? 'Signed in' : 'Sign in?', 44, SCREEN.h * 0.6);
@@ -278,6 +290,7 @@ export default class Passkey extends Scene {
     s.fillStyle = signed ? rgba('ink') : bone(0.85);
     const lb = signed ? 'Done' : 'Tap to approve';
     s.fillText(lb, bx - s.measureText(lb).width / 2, by + 13);
+    s.globalAlpha = 1;
 
     const cam = camera3(pose);
     const b = this.bg.ctx;
@@ -364,9 +377,12 @@ export default class Passkey extends Scene {
       lyric3D(c, pose, l4, t, plane([-0.72, 0.4, 0.2], 0), { family: fam, size: 0.17, on: bone(), off: bone(0.2), rows: [3, 6, 8], leading: 0.23, align: 'right', alpha: a });
     }
     c.restore();
+    // the last frames: through the glass into the light (matches hook2's first frame)
+    const white = prog(dive, 0.8, 1, ease.inQuad);
+    if (white > 0) { c.fillStyle = `rgba(246,247,244,${white})`; c.fillRect(0, 0, W, H); }
     comp.draw(renderer, this.text.upload(), out);
     void glow3D;
-    return { bloom: 0.45 + 0.3 * lift, vignette: 0.4, exposure: 1 + 0.4 * lift };
+    return { bloom: lerp(0.45 + 0.3 * lift, 0.12, white), vignette: lerp(0.4, 0.2, white), exposure: lerp(1 + 0.4 * lift, 1, white) };
   }
 }
 

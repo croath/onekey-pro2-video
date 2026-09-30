@@ -70,7 +70,7 @@ ${parts ? '#define PARTS' : ''}
 ${SS_TAP_GLSL}
 uniform vec3 camPos, camTgt, devPos;
 uniform mat3 devRot; // world -> device
-uniform float fov, devScale, sweep, glint, screenOn, explode, lift, gain;
+uniform float fov, devScale, sweep, glint, screenOn, explode, lift, gain, reach;
 uniform float show[6];
 uniform vec4 se;
 uniform sampler2D screenTex;
@@ -148,6 +148,11 @@ vec2 mapParts(vec3 p, bool noCover) {
     // (the cell walls only bound the march inside the thin layer the passives occupy)
     float dp = max(max(abs(qz - 0.0038) - 0.0038, sdRoundRect(q.xy, BH, BCORNER)), min(dpb, min(cw.x, cw.y) + 0.003));
     if (dp < r.x) r = vec2(dp, 7.0);
+    } else {
+      // outside that box the parts are at least this far away; without it the board's own distance
+      // overshoots the packages from above and rays land inside them (their tops spilled over their sides)
+      float bb = max(max(qz - BHMAX, max(abs(q.x) - BH.x - 0.01, abs(q.y) - BH.y - 0.01)), 0.003);
+      if (bb < r.x) r = vec2(bb, 2.0);
     }
   }
   if (show[3] > 0.5) { d = sdPlate(p - vec3(0, -0.06, -0.018 + zOff(3)), vec2(0.4, 0.5), 0.06, 0.016, 0.01); if (d < r.x) r = vec2(d, 4.0); }
@@ -347,8 +352,11 @@ vec3 matChip(vec3 p, vec3 n, float fres, vec3 E, vec3 R, vec3 D, vec4 a, vec4 b,
   vec2 cr = vec2(mod(cell, LIDG.x), floor(cell / LIDG.x));
   vec4 M = texture(lidTex, vec2((cr.x + uv.x) / LIDG.x, (LIDG.y - 1.0 - cr.y + uv.y) / LIDG.y));
   float top = smoothstep(0.6, 0.9, n.z), side = 1.0 - top;
-  // mould compound: semi-gloss black lid, laser marking (matte, lighter)
-  vec3 lid = vec3(0.0105, 0.011, 0.0115) * (D * 0.5 + 0.1) + R * 0.06 + E * (0.035 + 0.5 * fres);
+  // mould compound: semi-gloss black lid, laser marking (matte, lighter). Only the flat top mirrors the
+  // studio sharply: on the tiny rounded edge a sharp reflection breaks into steps where the softbox
+  // edges cross it (it read as a lens warping the package), so the edge and sides take the soft lobes.
+  float flt = smoothstep(0.97, 0.995, n.z);
+  vec3 lid = vec3(0.0105, 0.011, 0.0115) * (D * 0.5 + 0.1) + R * 0.06 + mix(R * 0.05 + E * 0.02 * fres, E * (0.035 + 0.5 * fres), flt);
   vec3 etch = vec3(0.07, 0.072, 0.07) * (D * 0.7 + 0.12) + R * 0.015;
   vec3 col = mix(lid, etch, M.r * top);
   // tin leads peeking out along the bottom of the package sides
@@ -475,7 +483,7 @@ vec4 trace(vec2 px) {
   float tf = tan(fov * 0.5);
   vec3 rd = normalize(fw + (uv.x * rt + uv.y * up) * tf);
   // bounding sphere
-  float R = devScale * (0.96 + 0.9 * explode + lift);
+  float R = devScale * (0.96 + reach); // reach: the farthest any part sits from the device's centre plane
   vec3 oc = camPos - devPos;
   float b = dot(oc, rd), c = dot(oc, oc) - R * R, h = b * b - c;
   if (h < 0.0) return vec4(0.0);
@@ -495,8 +503,12 @@ vec4 trace(vec2 px) {
     vec3 nz = normalize(transpose(devRot) * vec3(0.0, 0.0, 1.0));
     vec3 nw = dot(nz, rd) < 0.0 ? nz : -nz;
     float fres = pow(1.0 - max(dot(nw, -rd), 0.0), 5.0);
-    float a = 0.1 + 0.9 * fres;
-    col = vec4(env(reflect(rd, nw)) * mix(0.06, 1.0, fres) * a, a) + col * (1.0 - a);
+    // a smoked sheet with a polished rim, so it reads as glass from its first separation, head-on too
+    vec3 pc = toDev(camPos + rd * gCoverT);
+    float rim = exp(-max(-sdRoundRect(pc.xy, HALF - 0.004, CORNER - 0.004), 0.0) / 0.006);
+    float a = 0.28 + 0.72 * fres;
+    vec3 g = env(reflect(rd, nw)) * mix(0.08, 1.0, fres) + vec3(0.012, 0.013, 0.012);
+    col = vec4(g * a + vec3(0.93, 1.0, 0.96) * rim * 0.35, a) + col * (1.0 - a);
   }
 #endif
   return col;
@@ -531,7 +543,7 @@ export class Device3D {
     ssTap: SS_TAP,
     camPos: { value: new THREE.Vector3() }, camTgt: { value: new THREE.Vector3() }, devPos: { value: new THREE.Vector3() },
     devRot: { value: new THREE.Matrix3() }, fov: { value: 0.6 }, devScale: { value: 1 }, sweep: { value: 9 }, glint: { value: 0 },
-    screenOn: { value: 0 }, explode: { value: 0 }, lift: { value: 0 }, gain: { value: 1 }, show: { value: [1, 1, 1, 1, 1, 1] },
+    screenOn: { value: 0 }, explode: { value: 0 }, lift: { value: 0 }, reach: { value: 0 }, gain: { value: 1 }, show: { value: [1, 1, 1, 1, 1, 1] },
     se: { value: new THREE.Vector4() }, screenTex: { value: null },
     boardTex: { value: null }, passTex: { value: null }, lidTex: { value: null }, batTex: { value: null }, pOff: { value: [0, 0, 0, 0, 0, 0] },
   };
@@ -576,6 +588,9 @@ export class Device3D {
     u.show!.value = p.show ?? [1, 1, 1, 1, 1, 1];
     (u.se!.value as THREE.Vector4).set(...(p.se ?? [0, 0, 0, 0]));
     u.pOff!.value = p.offs ?? [0, 0, 0, 0, 0, 0];
+    // the bounding sphere must hold every part, overshoots and drops included (a tight one clips the
+    // plates into discs)
+    u.reach!.value = Math.max(0.06, ...EXPLODE_Z.map((z, i) => Math.abs(z * (p.explode ?? 0) + (i < 2 ? p.lift ?? 0 : 0) + (p.offs?.[i] ?? 0)))) + 0.02;
     if ((p.explode ?? 0) > 0) u.lidTex!.value = this.lids.upload();
     if (uploadScreen) u.screenTex!.value = this.screen.upload();
     else if (!u.screenTex!.value) u.screenTex!.value = this.screen.texture;

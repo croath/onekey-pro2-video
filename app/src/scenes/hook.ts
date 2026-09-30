@@ -95,11 +95,13 @@ export default class Hook extends Scene {
     this.one = ly.get('One key', k);
     this.hold = ly.get('Hold it, sign it', k);
     if (this.n === 2) this.open = ly.get('Open source');
-    // "the signatures go", written by a pen: each char while its word is sung
+    // "the signatures go", written by a pen: a word's letters one after another across its sung time
+    // (each letter gets its share: giving every letter the whole word held the pen on the first one)
     const words = this.only.words.slice(1);
     this.sig = strokeText(words.map((w) => w.w).join(' '), 'script', 100);
     words.forEach((w, i) => {
-      for (const _ of w.w) this.sigTimes.push([w.start, w.end]);
+      const n = w.w.length, d = (w.end - w.start) / n;
+      for (let j = 0; j < n; j++) this.sigTimes.push([w.start + j * d, w.start + (j + 1) * d]);
       if (i < words.length - 1) this.sigTimes.push([w.end, w.end]);
     });
     const beat = (t: number) => this.ctx.audio.timeOfBeat(Math.floor(this.ctx.audio.beatAt(t + 0.02)));
@@ -369,6 +371,9 @@ export default class Hook extends Scene {
     const dp: DevicePose = { ...pose, sweep: this.sweep(t), explode: lift > 0 ? 0.001 : 0, lift, gain: n2 ? lerp(1.1, 1, dusk) : 1 };
     comp.draw(renderer, this.dev.render(renderer, dp), out);
     L.front.render(renderer, out, camera3(pose));
+    // n=2 opens on the bone frame passkey dived into: it fades off the studio
+    const dawn = n2 ? 1 - prog(t, this.ctx.start, this.ctx.start + 0.5, ease.outCubic) : 0;
+    if (dawn > 0) { cf.fillStyle = `rgba(246,247,244,${dawn})`; cf.fillRect(0, 0, W, H); }
     comp.draw(renderer, this.front.upload(), out);
 
     const bloom = n2 ? lerp(0.12, 0.45, dusk) : 0.45;
@@ -489,7 +494,7 @@ export default class Hook extends Scene {
     lyric3D(cf, pose, this.only, t, plane(o, yaw), { family: F.archivo(100, 900), size: 0.4, on: lk.fg(), off: lk.fg(0.18), only: [0] });
     cf.globalAlpha = 1;
     // the signature, below; it peels off towards the camera on "go"
-    const away = prog(t, go.start + 0.05, go.start + 0.75, ease.inCubic);
+    const away = prog(t, go.end + 0.05, go.end + 0.7, ease.inCubic);
     const len = writtenLength(this.sig, this.sigTimes, t);
     if (len <= 0) return;
     const scale = 2.5 / this.sig.width;
