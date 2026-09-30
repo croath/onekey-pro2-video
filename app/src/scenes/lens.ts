@@ -123,7 +123,9 @@ export default class Lens extends Scene {
       const k = prog(t, t0, c2, ease.inOutCubic);
       const p0: DevicePose = { cam: [0, 0, 1], tgt: [0, 0, 0], fov: 0.5, rot: back };
       const lw = this.dev.toWorld(p0, LENS);
-      const tgt: V3 = [lerp(lw[0] + 0.06, 0.25, k), lerp(lw[1] - 0.02, 0.1, k), lerp(lw[2], 0, k)];
+      // the aim reaches the device's centre ahead of the pull-back, so the whole device is framed as it appears
+      const kt = 1 - (1 - k) * (1 - k);
+      const tgt: V3 = [lerp(lw[0] + 0.06, 0.25, kt), lerp(lw[1] - 0.02, 0.03, kt), lerp(lw[2], 0, kt)];
       pose = {
         cam: orbit(tgt, lerp(0.5, 3.9, k * k), lerp(0.3, -0.14, k), lerp(0.16, 0.05, k)), tgt, fov: 0.5, rot: back,
         sweep: lerp(1.5, -1.5, prog(t, wd(l1, 'reads').start, light.end + 0.3, ease.inOutCubic)),

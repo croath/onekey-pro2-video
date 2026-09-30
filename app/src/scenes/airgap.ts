@@ -157,7 +157,18 @@ export default class Airgap extends Scene {
     const mAB = prog(t, c2 - 0.3, c2 + 0.45, ease.inOutCubic);
     const mBC = prog(t, c3 - 0.3, c3 + 0.5, ease.inOutCubic);
     this.wB = mAB * (1 - mBC);
-    return blend(blend(A, B, mAB), C, mBC);
+    // the last beat: the device turns square to us and the camera falls back from it down a tunnel of
+    // its own outline -- hook1 opens inside that tunnel, the device small at its far end
+    const mD = this.pullOut(t);
+    const D: DevicePose = { cam: [0, 0.02, lerp(3.05, 42, mD)], tgt: [0, 0.02, 0], fov: 0.6, pos: [0, 0, 0], rot: [0, 0, 0] };
+    const P = blend(blend(A, B, mAB), C, mBC);
+    return mD > 0 ? blend(P, D, prog(mD, 0, 0.25, ease.inOutCubic)) : P;
+  }
+
+  /** 0..1 over the last beat before hook1 (the fall back down the tunnel). */
+  pullOut(t: number) {
+    const t1 = this.ctx.end, beat = this.ctx.audio.timeOfBeat(this.ctx.audio.beatAt(t1) - 1);
+    return prog(t, beat, t1, ease.inCubic);
   }
 
   /** The device's screen: the line of the moment on top, the work below. */
@@ -371,6 +382,14 @@ export default class Airgap extends Scene {
         const tail = mix3(a, far, Math.max(0, e - 0.35));
         Fr.seg(...tail, ...p, 1.6, ...sc(bone, 1.3), 1);
         glow3D(Fr, p, 2, bone, 0.9);
+      }
+    }
+    // the tunnel: the outline repeated towards the camera as it falls back
+    const mD = this.pullOut(t);
+    if (mD > 0) {
+      for (let j = 1; j <= 30; j++) {
+        const ring = toW(this.dev, pose, this.outl.map((q) => [q[0], q[1], q[2] + j * 1.3] as V3));
+        path3D(Fr, ring, 0, 1, 1, sc(bone, 0.5 * prog(mD, j * 0.012, j * 0.012 + 0.3)), 1, true);
       }
     }
     if (Fr.count) Fr.render(renderer, out, cam);

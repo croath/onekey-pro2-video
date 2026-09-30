@@ -134,7 +134,7 @@ export default class Passkey extends Scene {
       const z = -i * DOOR.D;
       const dz = camZ - z; // distance in front of the camera
       if (dz < 0.25) continue;
-      const a = dim * clamp((dz - 0.25) / 0.6) * Math.exp(-Math.max(0, dz - 1.5) / (dim < 1 ? 7 : 2.6));
+      const a = dim * clamp((dz - 0.25) / 0.6) * Math.exp(-Math.max(0, dz - 1.5) / (dim < 1 ? 7 : 1.7));
       if (a < 0.01) continue;
       const pl = this.doorPlane(i);
       // the frame, doubled (a thickness), and rails to the next door
@@ -144,7 +144,7 @@ export default class Passkey extends Scene {
       path3D(LB, fr2, 0, 1, 1, sc(0.35 * a), 1, true);
       for (const j of [4, 13, 22, 31]) {
         const p = fr[j]!, q = add(p, [0, 0, -DOOR.D]);
-        LB.seg(...p, ...q, 1, ...sc(0.22 * a), 1);
+        LB.seg(...p, ...q, 1, ...sc(0.22 * a * clamp((dz - 0.5) / 1.2)), 1);
       }
       if (i >= n) continue;
       // the door panel, swinging open about its left edge (away from the camera)
@@ -154,15 +154,17 @@ export default class Passkey extends Scene {
       const hinge: V3 = [-DOOR.w / 2 + 0.05, 0, z - 0.02];
       const u: V3 = [Math.cos(ang), 0, -Math.sin(ang)];
       const pp: Plane = { o: hinge, u, v: [0, 1, 0] };
+      // up close a door is just its outline: its form and dots fade in with distance (no clutter)
+      const near = clamp((dz - 0.7) / 1.0);
       const pw = DOOR.w - 0.1, ph = DOOR.h - 0.1;
       path3D(LB, rrect3D(pp, pw / 2, 0, pw, ph, DOOR.r - 0.05, 8), 0, 1, 1.4, sc(1.0 * a), 1, true);
       // the sign-in form: two fields, a button
-      for (let fi = 0; fi < 2; fi++) path3D(LB, rrect3D(pp, pw / 2, 0.15 - fi * 0.42, pw - 0.36, 0.22, 0.05, 4), 0, 1, 1, sc(0.6 * a), 1, true);
-      path3D(LB, rrect3D(pp, pw / 2, -0.85, pw - 0.36, 0.22, 0.11, 6), 0, 1, 1.2, sc(0.9 * a), 1, true);
+      for (let fi = 0; fi < 2; fi++) path3D(LB, rrect3D(pp, pw / 2, 0.15 - fi * 0.42, pw - 0.36, 0.22, 0.05, 4), 0, 1, 1, sc(0.6 * a * near), 1, true);
+      path3D(LB, rrect3D(pp, pw / 2, -0.85, pw - 0.36, 0.22, 0.11, 6), 0, 1, 1.2, sc(0.9 * a * near), 1, true);
       // password dots
       if (dz > 1) for (let d = 0; d < 8; d++) {
         const p = onPlane(pp, 0.3 + d * 0.1, -0.27);
-        glow3D(LB, p, 1.1 / Math.max(0.6, dz / 2.5), LIN.bone, 0.25 * a);
+        glow3D(LB, p, 1.1 / Math.max(0.6, dz / 2.5), LIN.bone, 0.25 * a * near);
       }
       if (c) {
         // the nameplate: the sung word, and `Sign in`
@@ -287,7 +289,7 @@ export default class Passkey extends Scene {
     LB.clear();
     const words = l2.words.map((w) => w.w.replace(/[^A-Za-z’']/g, ''));
     const corr: DevicePose = { ...pose, cam: [pose.cam[0], pose.cam[1], pose.cam[2] - 4], tgt: [pose.tgt[0], pose.tgt[1], pose.tgt[2] - 4] };
-    this.drawDoors(LB, null, corr, t, words, words.map(() => -99), corr.cam[2] + 1.2, 0.35 * (1 - lift));
+    this.drawDoors(LB, null, corr, t, words, words.map(() => -99), corr.cam[2] - 1.2, 0.16 * (1 - lift));
     LB.render(renderer, out, camera3(corr));
     comp.draw(renderer, this.dev.render(renderer, pose), out);
 
@@ -352,6 +354,7 @@ export default class Passkey extends Scene {
 
     // ---- the sung lines in the world: line 3 above the field; line 4 left of the device once centred
     const fam = F.archivo(100, 800);
+    c.save(); c.shadowColor = 'rgba(10,11,10,0.95)'; c.shadowBlur = 26; // an ink halo over the corridor lines
     if (t < c4 + 0.3) {
       const a = prog(t, c3, c3 + 0.4) * (1 - prog(t, c4 - 0.1, c4 + 0.3));
       lyric3D(c, pose, l3, t, { o: onPlane(fp, 0, 0.95), u: fp.u, v: fp.v }, { family: fam, size: 0.18, on: bone(), off: bone(0.2), rows: [4, 6], leading: 0.24, alpha: a });
@@ -360,6 +363,7 @@ export default class Passkey extends Scene {
       const a = prog(t, c4 - 0.1, c4 + 0.3) * (1 - lift);
       lyric3D(c, pose, l4, t, plane([-0.72, 0.4, 0.2], 0), { family: fam, size: 0.17, on: bone(), off: bone(0.2), rows: [3, 6, 8], leading: 0.23, align: 'right', alpha: a });
     }
+    c.restore();
     comp.draw(renderer, this.text.upload(), out);
     void glow3D;
     return { bloom: 0.45 + 0.3 * lift, vignette: 0.4, exposure: 1 + 0.4 * lift };
