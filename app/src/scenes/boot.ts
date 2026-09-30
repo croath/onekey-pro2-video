@@ -10,9 +10,11 @@ import { LineBatch } from '../engine/lines';
 import { rgba } from '../engine/palette';
 import { clamp, ease, lerp, prog, TAU } from '../engine/util';
 import { KEY, keyHead, keyParticles, keyPt, keyMarkPath } from './_motifs';
+import { Device3D } from './_device3d';
+import { OPENING, openingPose, pullK } from './_space';
 
 const CX = W / 2, CY = H / 2;
-const MARK_H = 460;
+const MARK_H = OPENING.markH;
 
 type P2 = { x: number; y: number };
 
@@ -57,6 +59,8 @@ export default class Boot extends Scene {
   );
   text = new Layer2D();
   lines = new LineBatch(4000, { screen2D: true, blend: 'add' });
+  dev = new Device3D();
+  bg3 = new Layer2D();
 
   render(f: Frame, out: THREE.WebGLRenderTarget) {
     const { renderer, comp, audio } = this.ctx;
@@ -68,9 +72,9 @@ export default class Boot extends Scene {
     const ringC0 = keyPt([KEY.ring.cx, KEY.ring.cy], CX, CY, MARK_H);
     const kpx = MARK_H / KEY.height;
     const dive = prog(b, 3.0, 4.0, ease.inOutCubic);
-    const zoom = lerp(1, 3.6, dive);
+    const zoom = lerp(1, OPENING.zoom, dive);
     // the ring's centre moves from its place to the frame's left third (it is the camera, top-left of the back)
-    const target = { x: lerp(ringC0.x, W * 0.36, dive), y: lerp(ringC0.y, H * 0.42, dive) };
+    const target = { x: lerp(ringC0.x, OPENING.at[0], dive), y: lerp(ringC0.y, OPENING.at[1], dive) };
     const T = (p: P2): P2 => ({ x: target.x + (p.x - ringC0.x) * zoom, y: target.y + (p.y - ringC0.y) * zoom });
     const S = (p: [number, number]) => T(keyPt(p, CX, CY, MARK_H));
 
@@ -190,6 +194,20 @@ export default class Boot extends Scene {
       c.globalAlpha = 1;
     }
     comp.draw(renderer, this.text.upload(), out);
+
+    // ---- the ring is the real device's rear camera: the 3D device fades in over it, framed exactly
+    // like the 2D ring, and from the last downbeat the camera starts to pull back (slab carries on)
+    const real = prog(b, 3.7, 4.0, ease.inOutCubic);
+    if (real > 0) {
+      this.bg3.clear(rgba('ink'));
+      const g = this.bg3.ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, H * 0.9);
+      g.addColorStop(0, 'rgba(26,29,27,1)');
+      g.addColorStop(1, rgba('ink'));
+      this.bg3.ctx.fillStyle = g;
+      this.bg3.ctx.fillRect(0, 0, W, H);
+      comp.draw(renderer, this.bg3.upload(), out, { opacity: real });
+      comp.draw(renderer, this.dev.render(renderer, openingPose(pullK(audio, this.ctx.lyrics, f.t))), out, { opacity: real });
+    }
 
     // ---- the key light: head + sputter, on top (additive)
     this.lines.clear();

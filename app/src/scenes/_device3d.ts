@@ -143,6 +143,8 @@ vec3 normalAt(vec3 pw, bool noCover) {
 // (camera-relative), so glossy faces towards the camera always mirror something.
 vec3 env(vec3 r) {
   float top = smoothstep(0.5, 0.62, r.y) * smoothstep(0.75, 0.6, abs(r.x + 0.15)) * smoothstep(0.8, 0.6, abs(r.z + 0.05));
+  // a real softbox falls off from its centre: flat metal mirrors a gradient, not a white slab
+  top *= 0.25 + 0.75 * exp(-(r.x + 0.15) * (r.x + 0.15) * 9.0 - (r.z + 0.05) * (r.z + 0.05) * 7.0);
   float left = smoothstep(-0.78, -0.86, r.x) * smoothstep(0.55, 0.45, abs(r.y - 0.1)) * smoothstep(-0.3, 0.1, r.z);
   float rim = smoothstep(0.9, 0.95, r.x) * smoothstep(0.5, 0.35, abs(r.y));
   float a = dot(r, rt), b = dot(r, up), c = -dot(r, fw);
@@ -230,7 +232,10 @@ vec3 matBack(vec3 p, vec3 nw, vec3 r, float fres, float px) {
   float dc = length(p.xy - cc), R = ${f4(D.cam.r)}, R2 = ${f4(D.cam.r * 0.62)};
   float ring = smoothstep(R + px, R - px, dc) * smoothstep(R2 - px, R2 + px, dc);
   float lens = smoothstep(R2 + px, R2 - px, dc);
-  col = mix(col, matMetal(r, fres) * 0.9, ring);
+  // the machined ring: a conic, anisotropic sheen (as boot draws it) over the mirror
+  float ca = fract((atan(-(p.y - cc.y), -(p.x - cc.x)) + 0.6) / 6.2831853);
+  float cs = pow(0.5 + 0.5 * cos((ca - 0.18) * 6.2831853), 4.0) + 0.8 * pow(0.5 + 0.5 * cos((ca - 0.86) * 6.2831853), 4.0);
+  col = mix(col, matMetal(r, fres) * 0.5 + mix(C_GRAPHITE * 0.4, C_BONE * 0.9, cs) * 0.55, ring);
   col = mix(col, vec3(0.004) + env(r) * 0.3 * fres + vec3(0.02, 0.03, 0.025) * smoothstep(0.03, 0.0, length(p.xy - cc + 0.012)), lens);
   return col;
 }
@@ -305,9 +310,12 @@ vec4 shade(vec3 pw, vec3 rd, float id, bool noCover) {
   float fres = pow(1.0 - max(dot(nw, -rd), 0.0), 5.0);
   float px = fwidth(p.x) + fwidth(p.y) + 1e-5;
   if (id > 8.5) {
-    if (n.z > 0.8) return vec4(matFrontGlass(p, r, fres), 1.0);
-    if (n.z < -0.8) return vec4(matBack(p, nw, r, fres, px), 1.0);
-    return vec4(matBand(p, r, fres), 1.0);
+    // the metal frame wraps round the rounded edge and the glass sits flat on it: blend over the
+    // roundover so the edge reads as one continuous curve (SwiftShader runs every branch anyway)
+    float wf = smoothstep(0.955, 0.995, n.z), wb = smoothstep(0.955, 0.995, -n.z);
+    vec3 band = matBand(p, r, fres);
+    vec3 face = n.z > 0.0 ? matFrontGlass(p, r, fres) : matBack(p, nw, r, fres, px);
+    return vec4(mix(band, face, wf + wb), 1.0);
   }
 #ifdef PARTS
   if (id < 1.5) return vec4(n.z > 0.8 ? matScreen(p, r, fres) + env(r) * 0.05 : C_INK * 0.3 + env(r) * 0.2 * fres, 1.0);

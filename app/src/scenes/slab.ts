@@ -11,11 +11,12 @@ import type * as THREE from 'three';
 import { Scene, type Frame } from '../engine/scene';
 import { Layer2D, W, H } from '../engine/gl';
 import { rgba } from '../engine/palette';
-import { F, font, layout } from '../engine/type';
-import { Lyrics, type Line } from '../engine/lyrics';
-import { clamp, ease, lerp, prog } from '../engine/util';
+import { F, font } from '../engine/type';
+import type { Line } from '../engine/lyrics';
+import { ease, lerp, prog } from '../engine/util';
 import { DEVICE } from './_motifs';
-import { Device3D, type DevicePose } from './_device3d';
+import { Device3D, type DevicePose, type V3 } from './_device3d';
+import { lyric3D, norm, openingPose, plane, pullK, type Plane } from './_space';
 
 /** Shot 3 (the card comparison) camera: straight on, long lens; px per device unit at the slab. */
 const SIDE = { cy: -0.25, dist: 11.5, fov: 0.22 };
@@ -23,7 +24,7 @@ const SIDE_PPU = H / 2 / Math.tan(SIDE.fov / 2) / SIDE.dist;
 /** ISO/IEC 7810 ID-1 card in device units (device width 53.1 mm). */
 const CARD = { w: 53.98 / 53.1, h: 85.6 / 53.1, r: 3.18 / 53.1 };
 
-type Shot = { cam: [number, number, number]; tgt: [number, number, number]; fov: number; theta: number; slideX: number; sweep: number; glint: number };
+type Shot = { cam: V3; tgt: V3; fov: number; pos?: V3; gain?: number; theta: number; slideX: number; sweep: number; glint: number };
 
 export default class Slab extends Scene {
   dev = new Device3D();
@@ -48,15 +49,17 @@ export default class Slab extends Scene {
     const c1 = this.cutAt(1), c2 = this.cutAt(2), c3 = this.cutAt(3);
     const word = (l: Line, q: string) => l.words.find((w) => w.w.toLowerCase().startsWith(q))!;
     if (t < c1) {
-      const back = word(l1, 'back').start;
-      const k = prog(t, this.ctx.start, c1);
-      const flip = prog(t, back - 0.05, back + 0.55, ease.outExpo);
-      const yaw = lerp(0.42, 0.3, k), dist = lerp(4.6, 4.2, k);
+      // one move from boot: the camera pulls back off the rear camera's ring to the whole back; on
+      // "front" the device turns round to its glass front, on "back" it carries on round to the back
+      const front = word(l1, 'front').start, back = word(l1, 'back').start;
+      const p = openingPose(pullK(this.ctx.audio, this.ctx.lyrics, t));
+      const turn1 = prog(t, front - 0.15, front + 0.55, ease.inOutCubic);
+      const turn2 = prog(t, back - 0.1, back + 0.6, ease.inOutCubic);
       return { i: 0, s: {
-        cam: [Math.sin(yaw) * dist, 0.45, Math.cos(yaw) * dist], tgt: [0, -0.22, 0], fov: 0.62,
-        theta: flip * Math.PI, slideX: 0,
+        cam: p.cam, tgt: p.tgt, fov: p.fov, pos: p.pos, gain: p.gain,
+        theta: Math.PI * (1 + turn1 + turn2), slideX: 0,
         // the highlight crosses the glass while "Glass on the front" is sung
-        sweep: lerp(-1.6, 1.6, prog(t, l1.words[0]!.start, word(l1, 'front').end, ease.inOutCubic)), glint: 0,
+        sweep: lerp(-1.6, 1.6, prog(t, front - 0.1, front + 0.9, ease.inOutCubic)), glint: 0,
       } };
     }
     if (t < c2) {
@@ -84,7 +87,7 @@ export default class Slab extends Scene {
     const k = prog(t, c3, this.ctx.end);
     return { i: 3, s: {
       cam: [0.12, lerp(0.45, 0.3, k), lerp(4.4, 4.0, k)], tgt: [0, -0.2, 0], fov: 0.62,
-      theta: Math.PI, slideX: 0,
+      theta: Math.PI, slideX: -0.5,
       sweep: lerp(1.8, -1.8, prog(t, word(l4, 'catching').start, light.end + 0.2, ease.inOutCubic)),
       glint: Math.exp(-Math.max(0, t - light.start) / 0.6) * (t >= light.start ? 1 : prog(t, light.start - 0.12, light.start)),
     } };
@@ -150,30 +153,34 @@ export default class Slab extends Scene {
     b.fillRect(0, 0, W, H);
     comp.draw(renderer, this.bg.upload(), out, { mode: 'replace' });
     const pose: DevicePose = {
-      cam: s.cam, tgt: s.tgt, fov: s.fov, rot: [s.theta, 0, 0], pos: [s.slideX, 0, 0],
-      sweep: s.sweep, glint: s.glint, gain: i === 1 ? 0.55 : 1, // the macro sits right under the softbox
+      cam: s.cam, tgt: s.tgt, fov: s.fov, rot: [s.theta, 0, 0], pos: s.pos ?? [s.slideX, 0, 0],
+      sweep: s.sweep, glint: s.glint, gain: s.gain ?? (i === 1 ? 0.55 : 1), // the macros sit right under the softbox
     };
     comp.draw(renderer, this.dev.render(renderer, pose), out);
 
-    // ---- lyric: one line per shot, set in Archivo, sung words in bone, the rest dim
+    // ---- lyric: set in the device's space, one line per shot, so it moves with the camera
     const c = this.text.ctx;
     this.text.clear();
     const line = this.L[i]!;
     const fam = F.archivo(100, 800);
-    const size = 78;
-    const lay = layout(line.text, fam, size);
-    const x0 = 120, y0 = H - 150;
-    c.font = font(fam, size);
-    let ci = 0;
-    for (const w of line.words) {
-      const k = Lyrics.wordProgress(w, f.t);
-      const early = prog(f.t, w.start - 0.4, w.start);
-      const i0 = line.text.indexOf(w.w, ci);
-      ci = i0 + w.w.length;
-      const g = lay.glyphs[i0];
-      if (!g) continue;
-      c.fillStyle = rgba('bone', k > 0 ? 1 : 0.18 + 0.17 * early);
-      c.fillText(w.w, x0 + g.x, y0 - (1 - ease.outExpo(clamp(k * 4))) * 10 * (k > 0 ? 1 : 0));
+    const t = f.t;
+    const on = rgba('bone'), off = rgba('bone', 0.2);
+    if (i === 0) {
+      // standing to the left of the device, facing the camera's final framing; it comes into view as
+      // the camera pulls back
+      const k = pullK(this.ctx.audio, this.ctx.lyrics, t);
+      lyric3D(c, pose, line, t, plane([-2.05, 0.3, 0.3], 0.34), { family: fam, size: 0.18, on, off, rows: [4], leading: 0.27, alpha: prog(k, 0.55, 1) });
+    } else if (i === 1) {
+      // a ribbon of type running up beside the metal ribbon, lettered like an engraving
+      const pl: Plane = { o: [-0.63, -0.78, 0.05], u: [0, 1, 0], v: norm([-1, 0, -1]) };
+      lyric3D(c, pose, line, t, pl, { family: fam, size: 0.072, on, off, pop: 0.03 });
+    } else if (i === 2) {
+      // beside the slab in its own plane, right-aligned to its left edge; it leaves with the slab
+      lyric3D(c, pose, line, t, plane([-0.72 + s.slideX, 0.12, 0]), { family: fam, size: 0.16, on, off, rows: [4], leading: 0.21, align: 'right' });
+    } else {
+      // right of the back, "light" catching the green of the mark
+      const acc = new Map([[line.words.length - 1, rgba('signal')]]);
+      lyric3D(c, pose, line, t, plane([0.2, 0.02, 0.12], 0.05), { family: fam, size: 0.17, on, off, rows: [4], leading: 0.23, accent: acc });
     }
     if (i === 2) this.cardOverlay(c, f.t);
     comp.draw(renderer, this.text.upload(), out);
