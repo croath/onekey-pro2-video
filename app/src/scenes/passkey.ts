@@ -1,194 +1,246 @@
-// `passkey` (bridge + lift) — docs/TREATMENT.md, ink ground, hairlines:
-//   "It's not just your coins anymore": the empty outline (after `touch`) relights its key; coin
-//     glyphs drift out of the outline and fade.
-//   "It's the key to every door": a corridor of sign-in doors (each a `Sign in` panel with two fields);
-//     the camera pushes through, a door swinging open on each downbeat.
-//   "FIDO in your pocket, passkeys, no passwords to type": in the nearest door's password field the
-//     dots drop out one by one and a key takes their place, `FIDO2 · passkey`.
-//   "Tap it once and you're in, no phishing link tonight": the device (bottom right) springs on "Tap";
-//     the last door opens on "in"; a hook on a hairline drops towards the device and bounces off its
-//     boundary, the line going slack and falling away. The lift holds the key, bright, for chorus 2.
+// `passkey` (bridge + lift) — docs/TREATMENT.md, the real device and a corridor of doors in 3D lines:
+//   "It's not just your coins anymore": the empty device `touch` left (same framing) wakes: its key
+//     relights green on the screen; coin tickers (type, no logos) lift off the glass into the world
+//     and drift away, fading. The line stands to the left. The camera pushes into the dark screen.
+//   "It's the key to every door": out of the screen, a corridor of sign-in doors drawn in hairlines,
+//     each a rounded frame of the device's proportions (the boundary, again) with rails running
+//     between them; every door carries one sung word as its nameplate over `Sign in`, two fields and a
+//     button. The camera flies down the corridor; each door swings open on its word.
+//   "FIDO in your pocket, passkeys, no passwords to type": the real device rises out of the bottom of
+//     the frame (the pocket) in front of the corridor, showing a passkey prompt; beside it, a password
+//     field set in the world drops its dots one by one and `passkey` takes their place.
+//   "Tap it once and you're in, no phishing link tonight": it springs on "Tap", the screen reads
+//     `Signed in` on "in"; a hook on a 3D hairline drops onto it and bounces off its outline, the line
+//     goes slack. The lift holds the key, bright, for chorus 2. The sung lines are set in the world.
 import type * as THREE from 'three';
 import { Scene, type Frame } from '../engine/scene';
 import { Layer2D, W, H } from '../engine/gl';
-import { rgba } from '../engine/palette';
+import { LineBatch } from '../engine/lines';
+import { LIN, rgba } from '../engine/palette';
 import { F, font } from '../engine/type';
 import type { Line } from '../engine/lyrics';
 import { clamp, ease, hash, lerp, prog, springStep, TAU } from '../engine/util';
-import { DEVICE, devicePath, keyHead2D, keyMarkPath, lyricLine } from './_motifs';
-import { Device3D, SCREEN, orbit, outline, type DevicePose } from './_device3d';
+import { DEVICE, keyMarkPath } from './_motifs';
+import { Device3D, SCREEN, orbit, outline, type DevicePose, type V3 } from './_device3d';
+import { add, camera3, fill3D, glow3D, lyric3D, onPlane, path3D, plane, rrect3D, studio, text3D, toW, type Plane } from './_space';
 
 const bone = (a = 1) => rgba('bone', a);
-const CX = W / 2, CY = H * 0.43;
+type RGB = [number, number, number];
+const sc = (k: number): RGB => [LIN.bone[0] * k, LIN.bone[1] * k, LIN.bone[2] * k];
+const TH = DEVICE.t / 2;
+/** The corridor: door frames (device proportions) every D along -z. */
+const DOOR = { w: 1.5, h: 1.5 * DEVICE.h, r: 1.5 * DEVICE.corner, D: 2.4 };
+/** `touch`'s last framing, so the cut is invisible. */
+const TOUCH_END = { T: [-0.22, 0.02, 0] as V3, dist: 3.9, yaw: -0.18, pitch: 0.1, pos: [0.48, 0, 0] as V3, rot: [-0.3, 0, 0] as V3 };
 
 export default class Passkey extends Scene {
-  text = new Layer2D();
   bg = new Layer2D();
+  text = new Layer2D();
   dev = new Device3D();
-  outl = outline(120, 0.02);
+  lines = new LineBatch(40000, { screen2D: false, blend: 'add' });
+  outl = outline(120, 0.03);
   L: Line[] = [];
 
   override init() {
     this.L = ["It's not just your coins", "It's the key to every door", 'FIDO in your pocket', 'Tap it once'].map((q) => this.ctx.lyrics.get(q));
   }
 
+  cutAt(l: Line) {
+    const au = this.ctx.audio;
+    return au.timeOfBeat(Math.floor(au.beatAt(l.words[0]!.start + 0.02)));
+  }
+
   render(f: Frame, out: THREE.WebGLRenderTarget) {
-    const { renderer, comp, audio } = this.ctx;
-    const [l1, l2, l3, l4] = this.L as [Line, Line, Line, Line];
-    const t = f.t;
+    const [l1, l2, l3] = this.L as [Line, Line, Line, Line];
+    const c2 = this.cutAt(l2), c3 = this.cutAt(l3);
+    if (t3(f) >= c3) return this.fido(f, out);
+    if (f.t >= c2) return this.corridor(f, out, l2, c2, c3);
+    return this.coins(f, out, l1, c2);
+  }
+
+  /** Line 1: the empty device wakes; coins leave; the camera pushes into the screen. */
+  coins(f: Frame, out: THREE.WebGLRenderTarget, l1: Line, c2: number) {
+    const { renderer, comp } = this.ctx;
+    const t = f.t, t0 = this.ctx.start;
+    const wd = (q: string) => l1.words.find((w) => w.w.toLowerCase().replace(/[^a-z]/g, '').startsWith(q))!;
+    const coins = wd('coins');
+    const push = prog(t, c2 - 0.9, c2, ease.inCubic);
+    const E = TOUCH_END;
+    // the push lands centred on the screen
+    const sw = prog(t, c2 - 1.6, c2, ease.inOutCubic);
+    const scrW: V3 = [E.pos[0], 0, 0];
+    const T: V3 = [lerp(E.T[0], scrW[0], sw), E.T[1], 0];
+    const pose: DevicePose = {
+      cam: orbit(T, lerp(E.dist, 0.45, push), lerp(E.yaw, -0.3, sw), lerp(E.pitch, 0.02, sw)), tgt: T, fov: 0.55,
+      pos: E.pos, rot: [lerp(E.rot[0], -0.3, sw), 0, 0], screen: 1,
+      sweep: lerp(-1.6, 1.6, prog(t, l1.words[0]!.start, coins.end, ease.inOutCubic)),
+    };
+    // screen: the key relights
+    const s = this.dev.screen.ctx;
+    this.dev.screen.clear(rgba('ink'));
+    const kk = prog(t, l1.words[0]!.start - 0.1, l1.words[0]!.start + 0.5, ease.outCubic);
+    s.globalAlpha = kk * (0.85 + 0.15 * f.a.kick);
+    s.fillStyle = rgba('signal');
+    s.fill(keyMarkPath(SCREEN.w / 2, SCREEN.h * 0.45, lerp(120, 200, kk)), 'evenodd');
+    s.globalAlpha = 1;
+    const cam = camera3(pose);
+    const b = this.bg.ctx;
+    const gc = this.dev.project(pose, [0, 0, 0]);
+    studio(b, gc.x, gc.y);
+    comp.draw(renderer, this.bg.upload(), out, { mode: 'replace' });
+    comp.draw(renderer, this.dev.render(renderer, pose), out);
+
+    // the outline (touch's last line) holds, then fades as the screen wakes
+    const LB = this.lines;
+    LB.clear();
+    const oa = 1 - prog(t, t0, l1.words[0]!.start + 0.8);
+    if (oa > 0) path3D(LB, toW(this.dev, pose, this.outl), 0, 1, 1.5, sc(oa), 1, true);
+    // coin tickers leave the glass: streaks behind each
+    const glyphs = ['BTC', 'ETH', 'SOL', 'USDT', 'BTC', 'ETH', 'SOL'];
     const c = this.text.ctx;
-    this.text.clear(rgba('ink'));
-    const cutAt = (l: Line) => audio.timeOfBeat(Math.floor(audio.beatAt(l.words[0]!.start + 0.02)));
-    const wd = (l: Line, q: string) => l.words.find((w) => w.w.toLowerCase().replace(/[^a-z]/g, '').startsWith(q))!;
-    const c2 = cutAt(l2), c3 = cutAt(l3);
-    if (t >= c3) return this.fido(f, out);
-
-    // door open times: each downbeat from line 2 on, and the last one on "in"
-    const opens = audio.downbeats.filter((d) => d > l2.words[0]!.start - 0.1 && d < c3 - 0.3);
-    opens.push(c3);
-
-    if (t < c2) {
-      // ---- the empty outline relights; coins leave
-      const DW = 380;
-      c.strokeStyle = bone(0.95);
-      c.lineWidth = 2;
-      c.stroke(devicePath(CX, CY, DW));
-      const kk = prog(t, l1.words[0]!.start, l1.words[0]!.start + 0.6, ease.outCubic);
-      keyHead2D(c, CX, CY, lerp(0.2, 0.9, kk), kk * (0.8 + 0.2 * f.a.kick));
-      const coins = wd(l1, 'coins');
-      const glyphs = ['BTC', 'ETH', 'SOL', 'BTC', 'ETH', 'USDT']; // tickers as type, no logos
-      glyphs.forEach((g, i) => {
-        const t0 = coins.start + i * 0.18 - 0.4;
-        const k = prog(t, t0, t0 + 2.2, ease.outCubic);
-        if (k <= 0) return;
-        const a = (i / glyphs.length) * TAU + 0.4;
-        const r = lerp(40, 520, k);
-        c.font = font(F.mono(500), 44);
-        c.fillStyle = bone(0.85 * Math.min(1, k * 4) * (1 - k));
-        c.fillText(g, CX + Math.cos(a) * r * 1.3 - 20, CY + Math.sin(a) * r * 0.8 + 22);
-      });
-      lyricLine(c, l1, t, 120, H - 90, { family: F.archivo(100, 800), size: 72, on: bone(), off: bone(0.3) });
-    } else {
-      // ---- the corridor
-      // camera depth: door i at z = i + 1 reaches s = 1 when it opens
-      const T = opens, n = T.length;
-      let d: number;
-      if (t <= T[0]!) d = lerp(-1.2, 0, prog(t, c2, T[0]!, ease.outCubic));
-      else if (t >= T[n - 1]!) d = n - 1 + prog(t, T[n - 1]!, T[n - 1]! + 0.6, ease.inCubic) * 1.2;
-      else {
-        let i = 0;
-        while (i < n - 2 && t >= T[i + 1]!) i++;
-        d = i + prog(t, T[i]!, T[i + 1]!, ease.inOutCubic);
-      }
-      const DWp = 560, DHp = 720;
-      for (let i = n + 2; i >= 0; i--) {
-        const z = i + 1 - d;
-        if (z <= 0.35) continue;
-        const s = 1 / z;
-        const w = DWp * s, h = DHp * s;
-        const x0 = CX - w / 2, y0 = CY - h / 2;
-        const a = clamp((z - 0.35) / 0.4) * clamp(s * 2.5);
-        const openK = i < n ? prog(t, T[i]! - 0.05, T[i]! + 0.35, ease.outCubic) : 0;
-        // the door frame
-        c.strokeStyle = bone(0.35 * a);
-        c.lineWidth = 1;
-        c.strokeRect(x0, y0, w, h);
-        // the door panel, swinging open about its left edge
-        const sw = Math.cos(openK * Math.PI * 0.46);
-        const pw = w * sw;
-        c.save();
-        c.globalAlpha = a;
-        c.strokeStyle = bone(0.9);
-        c.lineWidth = 1.5;
-        c.beginPath();
-        c.moveTo(x0, y0); c.lineTo(x0 + pw, y0 + h * 0.06 * (1 - sw)); c.lineTo(x0 + pw, y0 + h - h * 0.06 * (1 - sw)); c.lineTo(x0, y0 + h); c.closePath();
-        c.fillStyle = rgba('ink');
-        c.fill();
-        c.stroke();
-        if (sw > 0.25) {
-          // the sign-in panel on the door
-          c.transform(sw, 0, 0, 1, x0 * (1 - sw), 0);
-          c.font = font(F.archivo(100, 700), Math.max(6, 44 * s));
-          c.fillStyle = bone(0.95);
-          c.fillText('Sign in', x0 + 50 * s, y0 + 110 * s);
-          c.lineWidth = Math.max(0.6, 1.4 * s);
-          for (let k = 0; k < 2; k++) {
-            c.strokeStyle = bone(0.7);
-            c.beginPath(); c.roundRect(x0 + 50 * s, y0 + (190 + k * 130) * s, w - 100 * s, 76 * s, 10 * s); c.stroke();
-            c.font = font(F.mono(400), Math.max(5, 20 * s));
-            c.fillStyle = bone(0.6);
-            c.fillText(k === 0 ? 'email' : 'password', x0 + 50 * s, y0 + (176 + k * 130) * s);
-          }
-          // the password field: dots, or (after "passkeys") dropping out for a key
-          const pk = wd(l3, 'passkeys'), ty = wd(l3, 'type');
-          const drop = prog(t, pk.start, ty.end, ease.linear);
-          const fy = y0 + (320 + 38) * s;
-          for (let j = 0; j < 8; j++) {
-            const tj = j / 8;
-            const kd = clamp((drop - tj) * 8);
-            const x = x0 + (84 + j * 34) * s;
-            const y = fy + 400 * s * kd * kd;
-            c.fillStyle = bone(0.9 * (1 - kd));
-            c.beginPath(); c.arc(x, y, 7 * s, 0, TAU); c.fill();
-          }
-          const kk = prog(t, ty.start, ty.start + 0.3, ease.outExpo);
-          if (kk > 0 && s > 0.5) {
-            c.save();
-            c.globalAlpha = a * kk;
-            c.fillStyle = rgba('signal');
-            c.fill(keyMarkPath(x0 + 110 * s, fy, 56 * s), 'evenodd');
-            c.font = font(F.mono(500), Math.max(6, 22 * s));
-            c.fillStyle = bone();
-            c.fillText('FIDO2 · passkey', x0 + 160 * s, fy + 8 * s);
-            c.restore();
-          }
-          // the button
-          c.fillStyle = bone(0.9);
-          c.beginPath(); c.roundRect(x0 + 50 * s, y0 + 470 * s, w - 100 * s, 70 * s, 35 * s); c.fill();
-          c.font = font(F.archivo(100, 700), Math.max(6, 26 * s));
-          c.fillStyle = rgba('ink');
-          c.fillText('Continue', x0 + w / 2 - 55 * s, y0 + 514 * s);
-        }
-        c.restore();
-      }
-      lyricLine(c, l2, t, 120, H - 90, { family: F.archivo(100, 800), size: 64, on: bone(), off: bone(0.3) });
-    }
-    void hash;
-
+    this.text.clear();
+    glyphs.forEach((g, i) => {
+      const tb = coins.start - 0.5 + i * 0.16;
+      const k = prog(t, tb, tb + 2.4, ease.outCubic);
+      if (k <= 0 || k >= 1) return;
+      const a = (i / glyphs.length) * TAU + 0.5;
+      const start = this.dev.toWorld(pose, [Math.cos(a) * 0.15, -0.25 + Math.sin(a) * 0.2, TH + 0.01]);
+      const dir: V3 = [Math.cos(a) * 1.3 - 0.4, Math.sin(a) * 0.9 + 0.2, 0.9 + 0.5 * hash(i, 2)];
+      const p = add(start, [dir[0] * k * 1.8, dir[1] * k * 1.8, dir[2] * k * 1.8]);
+      const pb = add(start, [dir[0] * Math.max(0, k - 0.12) * 1.8, dir[1] * Math.max(0, k - 0.12) * 1.8, dir[2] * Math.max(0, k - 0.12) * 1.8]);
+      const al = Math.min(1, k * 5) * (1 - k);
+      LB.seg(...pb, ...p, 1.1, ...sc(0.7 * al), 1);
+      c.fillStyle = bone(0.9 * al);
+      text3D(c, pose, g, F.mono(500), 0.12, plane(p, -0.2));
+    });
+    if (LB.count) LB.render(renderer, out, camera3(pose)); // (camera3 is shared: re-aim it after the corridor)
+    lyric3D(c, pose, l1, t, plane([-0.1, 0.25, 0.1], -0.25), {
+      family: F.archivo(100, 800), size: 0.16, on: bone(), off: bone(0.2), rows: [3], leading: 0.21, align: 'right',
+      alpha: prog(t, t0, t0 + 0.4) * (1 - push),
+    });
     comp.draw(renderer, this.text.upload(), out);
-    return { bloom: 0.4, vignette: 0.4 };
+    return { bloom: 0.42, vignette: 0.42, fade: prog(t, c2 - 0.12, c2) * 0.9 };
+  }
+
+  /** Door i's frame plane (at z = -i D). */
+  doorPlane(i: number): Plane {
+    return plane([0, 0, -i * DOOR.D]);
+  }
+
+  /** Draw the corridor's doors into the batch (and nameplates into `c`); doors open at `opens[i]`. */
+  drawDoors(LB: LineBatch, c: CanvasRenderingContext2D | null, pose: DevicePose, t: number, words: string[], opens: number[], camZ: number, dim = 1) {
+    const n = words.length;
+    for (let i = n + 2; i >= 0; i--) {
+      const z = -i * DOOR.D;
+      const dz = camZ - z; // distance in front of the camera
+      if (dz < 0.25) continue;
+      const a = dim * clamp((dz - 0.25) / 0.6) * Math.exp(-Math.max(0, dz - 1.5) / (dim < 1 ? 7 : 2.6));
+      if (a < 0.01) continue;
+      const pl = this.doorPlane(i);
+      // the frame, doubled (a thickness), and rails to the next door
+      const fr = rrect3D(pl, 0, 0, DOOR.w, DOOR.h, DOOR.r, 8);
+      path3D(LB, fr, 0, 1, 1.3, sc(0.8 * a), 1, true);
+      const fr2 = rrect3D(pl, 0, 0, DOOR.w, DOOR.h, DOOR.r, 8, -0.12);
+      path3D(LB, fr2, 0, 1, 1, sc(0.35 * a), 1, true);
+      for (const j of [4, 13, 22, 31]) {
+        const p = fr[j]!, q = add(p, [0, 0, -DOOR.D]);
+        LB.seg(...p, ...q, 1, ...sc(0.22 * a), 1);
+      }
+      if (i >= n) continue;
+      // the door panel, swinging open about its left edge (away from the camera)
+      const op = opens[i]!;
+      const k = prog(t, op - 0.05, op + 0.55, ease.outCubic);
+      const ang = k * 1.5;
+      const hinge: V3 = [-DOOR.w / 2 + 0.05, 0, z - 0.02];
+      const u: V3 = [Math.cos(ang), 0, -Math.sin(ang)];
+      const pp: Plane = { o: hinge, u, v: [0, 1, 0] };
+      const pw = DOOR.w - 0.1, ph = DOOR.h - 0.1;
+      path3D(LB, rrect3D(pp, pw / 2, 0, pw, ph, DOOR.r - 0.05, 8), 0, 1, 1.4, sc(1.0 * a), 1, true);
+      // the sign-in form: two fields, a button
+      for (let fi = 0; fi < 2; fi++) path3D(LB, rrect3D(pp, pw / 2, 0.15 - fi * 0.42, pw - 0.36, 0.22, 0.05, 4), 0, 1, 1, sc(0.6 * a), 1, true);
+      path3D(LB, rrect3D(pp, pw / 2, -0.85, pw - 0.36, 0.22, 0.11, 6), 0, 1, 1.2, sc(0.9 * a), 1, true);
+      // password dots
+      if (dz > 1) for (let d = 0; d < 8; d++) {
+        const p = onPlane(pp, 0.3 + d * 0.1, -0.27);
+        glow3D(LB, p, 1.1 / Math.max(0.6, dz / 2.5), LIN.bone, 0.25 * a);
+      }
+      if (c) {
+        // the nameplate: the sung word, and `Sign in`
+        // only the doors just ahead carry readable plates
+        const vis = clamp((dz - 1.2) / 0.5) * clamp((2.3 * DOOR.D - dz) / DOOR.D);
+        c.fillStyle = bone(a * vis * (t >= op - 0.3 ? 1 : 0.35));
+        text3D(c, pose, words[i]!, F.archivo(100, 800), 0.34, { o: onPlane(pp, 0.18, 0.72), u: pp.u, v: pp.v });
+        c.fillStyle = bone(0.6 * a * vis);
+        text3D(c, pose, 'Sign in', F.mono(500), 0.09, { o: onPlane(pp, 0.2, 0.45), u: pp.u, v: pp.v });
+        text3D(c, pose, 'password', F.mono(400), 0.06, { o: onPlane(pp, 0.2, -0.08), u: pp.u, v: pp.v });
+      }
+    }
+  }
+
+  corridor(f: Frame, out: THREE.WebGLRenderTarget, l2: Line, c2: number, c3: number) {
+    const { renderer, comp } = this.ctx;
+    const t = f.t;
+    const words = l2.words.map((w) => w.w.replace(/[^A-Za-z’']/g, ''));
+    const opens = l2.words.map((w) => w.start);
+    // the camera passes door i a little after it opens
+    const knots = opens.map((o, i) => [o + 0.45, -i * DOOR.D + 0.6] as [number, number]);
+    knots.unshift([c2, 2.6]);
+    knots.push([c3 + 0.3, -(words.length) * DOOR.D + 2.2]);
+    let camZ = knots[0]![1];
+    for (let i = 0; i < knots.length - 1; i++) {
+      const [ta, za] = knots[i]!, [tb, zb] = knots[i + 1]!;
+      if (t >= ta) camZ = lerp(za, zb, ease.inOutQuad(clamp((t - ta) / (tb - ta))));
+    }
+    const sway = Math.sin(t * 0.9) * 0.12;
+    const pose: DevicePose = { cam: [0.25 + sway, 0.1, camZ], tgt: [-0.1 + sway * 0.5, -0.02, camZ - 3], fov: 0.8 };
+    const b = this.bg.ctx;
+    studio(b, W / 2, H / 2, 0.8);
+    comp.draw(renderer, this.bg.upload(), out, { mode: 'replace' });
+    const LB = this.lines;
+    LB.clear();
+    this.text.clear();
+    const c = this.text.ctx;
+    this.drawDoors(LB, c, pose, t, words, opens, camZ);
+    // floor lines along the corridor
+    const yF = -DOOR.h / 2 - 0.02;
+    for (let x = -3; x <= 3; x++) LB.seg(x * 0.5, yF, 3, x * 0.5, yF, -20, 1, ...sc(0.08), 1);
+    LB.render(renderer, out, camera3(pose));
+    comp.draw(renderer, this.text.upload(), out);
+    return { bloom: 0.42, vignette: 0.45, fade: 0.9 * (1 - prog(t, c2, c2 + 0.25)) };
   }
 
   /**
    * "FIDO in your pocket, passkeys, no passwords to type": the real device rises out of the bottom of
-   * the frame (the pocket) showing a passkey prompt; beside it a password field's dots drop out one by
-   * one and `passkey` takes their place. "Tap it once and you're in": it springs on "Tap", the screen
-   * reads `Signed in` on "in". "no phishing link tonight": a hook on a hairline drops onto it and
-   * bounces off its outline; the line goes slack. The lift: the screen's key glows up into chorus 2.
+   * the frame (the pocket) in front of the corridor, showing a passkey prompt; beside it a password
+   * field set in the world drops its dots and `passkey` takes their place. "Tap it once and you're
+   * in": it springs on "Tap", the screen reads `Signed in` on "in". "no phishing link tonight": a hook
+   * on a 3D hairline drops onto it and bounces off its outline; the line goes slack. The lift: the
+   * screen's key glows up into chorus 2.
    */
   fido(f: Frame, out: THREE.WebGLRenderTarget) {
     const { renderer, comp, audio } = this.ctx;
-    const [, , l3, l4] = this.L as [Line, Line, Line, Line];
+    const [, l2, l3, l4] = this.L as [Line, Line, Line, Line];
     const t = f.t;
     const wd = (l: Line, q: string) => l.words.find((w) => w.w.toLowerCase().replace(/[^a-z]/g, '').startsWith(q))!;
-    const c3 = audio.timeOfBeat(Math.floor(audio.beatAt(l3.words[0]!.start + 0.02)));
-    const c4 = audio.timeOfBeat(Math.floor(audio.beatAt(l4.words[0]!.start + 0.02)));
+    const c3 = this.cutAt(l3), c4 = this.cutAt(l4);
     const pocket = wd(l3, 'pocket'), pk = wd(l3, 'passkeys'), ty = wd(l3, 'type');
     const tap = wd(l4, 'tap'), inW = l4.words.find((w) => w.w.startsWith('in,'))!;
     const ph = wd(l4, 'phishing'), link = wd(l4, 'link');
     const lastW = l4.words[l4.words.length - 1]!;
     const lift = prog(t, lastW.end, this.ctx.end, ease.inCubic);
+    void audio;
 
     // ---- the device
     const rise = prog(t, c3, pocket.end, ease.outCubic);
     const centre = prog(t, inW.start + 0.2, ph.start - 0.1, ease.inOutCubic);
     const sp = t > tap.start ? springStep(t - tap.start, 4, 0.3) : 0;
     const press = t > tap.start ? Math.sin(Math.min(1, (t - tap.start) / 0.14) * Math.PI) : 0;
-    const bounce = t > link.start ? Math.abs(springStep(t - link.start, 3, 0.45) - 1) : 0;
-    const T: [number, number, number] = [0, 0, 0];
+    const bounce = t > link.start ? Math.sin(Math.min(1, (t - link.start) / 0.25) * Math.PI) * Math.exp(-(t - link.start) / 0.5) : 0;
+    const rebound = t > link.start ? ease.outCubic(prog(t, link.start, link.start + 0.6)) : 0;
+    const T: V3 = [lerp(-0.2, 0, centre), 0.3 * centre, 0];
     const pose: DevicePose = {
-      cam: orbit(T, 5.8, 0, 0.04), tgt: T, fov: 0.5,
-      pos: [lerp(1.15, 0, centre), lerp(-2.8, 0.2, rise) - bounce * 0.04, 0],
+      cam: orbit(T, lerp(5.2, 5.3, prog(t, c3, this.ctx.end)), lerp(-0.12, 0, centre), 0.05), tgt: T, fov: 0.5,
+      pos: [lerp(0.95, 0, centre), lerp(-2.8, 0.1, rise) - bounce * 0.04, 0],
       rot: [lerp(-0.35, 0, centre), lerp(0.1, 0, rise), lerp(0.25, 0.04, rise)],
       scale: 1 - 0.06 * press + (t > tap.start ? (sp - 1) * 0.02 : 0),
       screen: 1, sweep: lerp(-1.5, 1.5, prog(t, tap.start, tap.start + 0.8, ease.inOutCubic)),
@@ -207,12 +259,10 @@ export default class Passkey extends Scene {
     s.globalAlpha = 1;
     s.font = font(F.archivo(100, 800), 60);
     s.fillStyle = bone();
-    const head = signed ? 'Signed in' : 'Sign in?';
-    s.fillText(head, 44, SCREEN.h * 0.6);
+    s.fillText(signed ? 'Signed in' : 'Sign in?', 44, SCREEN.h * 0.6);
     s.font = font(F.mono(400), 30);
     s.fillStyle = bone(0.6);
     s.fillText('example.com', 44, SCREEN.h * 0.6 + 56);
-    // the tap target
     const ring = t > tap.start ? prog(t, tap.start, tap.start + 0.5, ease.outCubic) : 0;
     const bx = SCREEN.w / 2, by = SCREEN.h * 0.84;
     s.fillStyle = signed ? rgba('signal') : bone(0.12);
@@ -227,83 +277,93 @@ export default class Passkey extends Scene {
     const lb = signed ? 'Done' : 'Tap to approve';
     s.fillText(lb, bx - s.measureText(lb).width / 2, by + 13);
 
-    this.bg.clear(rgba('ink'));
+    const cam = camera3(pose);
     const b = this.bg.ctx;
-    const gr = b.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, H * 0.85);
-    gr.addColorStop(0, `rgba(24,${27 + Math.round(40 * lift)},25,1)`);
-    gr.addColorStop(1, rgba('ink'));
-    b.fillStyle = gr;
-    b.fillRect(0, 0, W, H);
+    const gc = this.dev.project(pose, [0, 0, 0]);
+    studio(b, gc.x, H / 2, 1, H * 0.85, [24, 27 + Math.round(40 * lift), 25]);
     comp.draw(renderer, this.bg.upload(), out, { mode: 'replace' });
+    // the corridor stays on behind, all doors open, dim
+    const LB = this.lines;
+    LB.clear();
+    const words = l2.words.map((w) => w.w.replace(/[^A-Za-z’']/g, ''));
+    const corr: DevicePose = { ...pose, cam: [pose.cam[0], pose.cam[1], pose.cam[2] - 4], tgt: [pose.tgt[0], pose.tgt[1], pose.tgt[2] - 4] };
+    this.drawDoors(LB, null, corr, t, words, words.map(() => -99), corr.cam[2] + 1.2, 0.35 * (1 - lift));
+    LB.render(renderer, out, camera3(corr));
     comp.draw(renderer, this.dev.render(renderer, pose), out);
 
+    // ---- in front: the password field (world), the hook
+    LB.clear();
     const c = this.text.ctx;
     this.text.clear();
-    // ---- the password field, left, while the device is off-centre
-    const pa = prog(t, c3 + 0.1, c3 + 0.5) * (1 - centre);
+    const pa = prog(t, c3 + 0.1, c3 + 0.5) * (1 - centre) * (1 - prog(t, c4 - 0.3, c4));
+    const fp: Plane = plane([-1.95, -0.3, 0.4], 0.12);
     if (pa > 0) {
-      c.globalAlpha = pa;
-      const x0 = 160, y0 = H * 0.38, fw = 560, fh = 96;
-      c.font = font(F.mono(400), 26);
-      c.fillStyle = bone(0.6);
-      c.fillText('password', x0, y0 - 18);
-      c.strokeStyle = bone(0.7);
-      c.lineWidth = 1.5;
-      c.beginPath(); c.roundRect(x0, y0, fw, fh, 14); c.stroke();
+      path3D(LB, rrect3D(fp, 0.8, 0, 1.6, 0.3, 0.06, 6), 0, 1, 1.4, sc(0.8 * pa), 1, true);
+      c.fillStyle = bone(0.6 * pa);
+      text3D(c, pose, 'password', F.mono(400), 0.075, { o: onPlane(fp, 0, 0.24), u: fp.u, v: fp.v });
       const drop = prog(t, pk.start, ty.end, ease.linear);
+      c.fillStyle = bone(0.9 * pa);
       for (let j = 0; j < 10; j++) {
         const kd = clamp((drop - j / 10) * 10);
-        const x = x0 + 44 + j * 40, y = y0 + fh / 2 + 500 * kd * kd;
-        c.fillStyle = bone(0.9 * (1 - kd));
-        c.beginPath(); c.arc(x, y, 9, 0, TAU); c.fill();
+        if (kd >= 1) continue;
+        const cx = 0.16 + j * 0.12, cy = -1.4 * kd * kd, z = 0.3 * kd;
+        const circ: V3[] = Array.from({ length: 10 }, (_, q) => onPlane(fp, cx + 0.028 * Math.cos(q * 0.628), cy + 0.028 * Math.sin(q * 0.628), z));
+        c.globalAlpha = 1 - kd;
+        fill3D(c, pose, circ);
+        c.globalAlpha = 1;
       }
       const kk = prog(t, ty.start, ty.start + 0.3, ease.outExpo);
       if (kk > 0) {
-        c.globalAlpha = pa * kk;
-        c.fillStyle = rgba('signal');
-        c.fill(keyMarkPath(x0 + 60, y0 + fh / 2, 58), 'evenodd');
-        c.font = font(F.mono(500), 30);
-        c.fillStyle = bone();
-        c.fillText('passkey · no password', x0 + 110, y0 + fh / 2 + 10);
+        c.fillStyle = bone(pa * kk);
+        text3D(c, pose, 'passkey · no password', F.mono(500), 0.085, { o: onPlane(fp, 0.14, -0.035), u: fp.u, v: fp.v });
       }
-      c.globalAlpha = 1;
     }
-
-    // ---- the hook: drops onto the device's outline and bounces off
+    // the hook: drops onto the device's outline and bounces off
+    const ow = toW(this.dev, pose, this.outl);
     if (t > ph.start - 0.3) {
-      const pts = this.outl.map((q) => this.dev.project(pose, q));
-      const top = Math.min(...pts.map((p) => p.y));
-      const slack0 = prog(t, link.end, link.end + 0.9, ease.inCubic);
-      const hx = W / 2 + 30 + slack0 * 420;
-      const kDown = prog(t, ph.start - 0.2, link.start, ease.inCubic);
+      const top = this.dev.toWorld(pose, [0.1, DEVICE.h / 2 + 0.03, TH + 0.25]);
       const slack = prog(t, link.end, link.end + 0.9, ease.inCubic);
-      const hy = lerp(-120, top - 10, kDown) - bounce * 160 - slack * 200;
-      c.strokeStyle = bone(0.9 * (1 - slack));
-      c.lineWidth = 1.4;
-      c.beginPath();
-      c.moveTo(hx, -20);
-      c.bezierCurveTo(hx + slack * 200, hy * 0.3, hx - slack * 160, hy * 0.7, hx, hy - 60);
-      c.stroke();
-      c.lineWidth = 3;
-      c.beginPath();
-      c.moveTo(hx, hy - 60); c.lineTo(hx, hy);
-      c.arc(hx - 22, hy, 22, 0, Math.PI * 0.95);
-      c.stroke();
-      c.beginPath(); c.moveTo(hx - 44, hy); c.lineTo(hx - 36, hy - 12); c.stroke();
+      const kDown = prog(t, ph.start - 0.2, link.start, ease.inCubic);
+      const hx = top[0] + slack * 1.2;
+      const hy = lerp(top[1] + 2.2, top[1] + 0.02, kDown) + rebound * 0.45 + slack * 0.8;
+      const hz = top[2];
+      const la = 1 - slack;
+      // the line, from above frame, sagging once slack
+      const pts: V3[] = [];
+      for (let q = 0; q <= 16; q++) {
+        const u = q / 16;
+        pts.push([lerp(hx, hx, u) + Math.sin(u * Math.PI) * slack * 0.5, lerp(top[1] + 3.5, hy + 0.4, u) - Math.sin(u * Math.PI) * slack * 0.6, hz]);
+      }
+      path3D(LB, pts, 0, 1, 1.2, sc(0.9 * la), 1);
+      // the shank and bend
+      const R = 0.12;
+      const hook: V3[] = [[hx, hy + 0.4, hz], [hx, hy + R, hz]];
+      for (let q = 0; q <= 14; q++) { const a = (q / 14) * Math.PI * 0.95; hook.push([hx - R + Math.cos(a) * R, hy + R - Math.sin(a) * R, hz]); }
+      hook.push([hx - 2 * R + 0.02, hy + R + 0.1, hz]);
+      hook.push([hx - 2 * R + 0.07, hy + R + 0.04, hz]);
+      path3D(LB, hook, 0, 1, 2.4, sc(1.1 * la), 1);
       // the boundary flashes where it was struck
-      if (t > link.start && t < link.start + 0.35) {
-        c.strokeStyle = bone(0.9 * (1 - (t - link.start) / 0.35));
-        c.lineWidth = 2.5;
-        c.beginPath();
-        pts.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y)));
-        c.closePath();
-        c.stroke();
+      if (t > link.start && t < link.start + 0.4) {
+        const kf = 1 - (t - link.start) / 0.4;
+        path3D(LB, ow, 0, 1, 2.2, sc(1.3 * kf), 1, true);
       }
     }
+    if (LB.count) LB.render(renderer, out, camera3(pose)); // (camera3 is shared: re-aim it after the corridor)
 
-    const line = t < c4 ? l3 : l4;
-    lyricLine(c, line, t, 120, H - 90, { family: F.archivo(100, 800), size: 64, on: bone(), off: bone(0.3), alpha: 1 - lift });
+    // ---- the sung lines in the world: line 3 above the field; line 4 left of the device once centred
+    const fam = F.archivo(100, 800);
+    if (t < c4 + 0.3) {
+      const a = prog(t, c3, c3 + 0.4) * (1 - prog(t, c4 - 0.1, c4 + 0.3));
+      lyric3D(c, pose, l3, t, { o: onPlane(fp, 0, 0.95), u: fp.u, v: fp.v }, { family: fam, size: 0.18, on: bone(), off: bone(0.2), rows: [4, 6], leading: 0.24, alpha: a });
+    }
+    if (t >= c4 - 0.1) {
+      const a = prog(t, c4 - 0.1, c4 + 0.3) * (1 - lift);
+      lyric3D(c, pose, l4, t, plane([-0.72, 0.4, 0.2], 0), { family: fam, size: 0.17, on: bone(), off: bone(0.2), rows: [3, 6, 8], leading: 0.23, align: 'right', alpha: a });
+    }
     comp.draw(renderer, this.text.upload(), out);
+    void glow3D;
     return { bloom: 0.45 + 0.3 * lift, vignette: 0.4, exposure: 1 + 0.4 * lift };
   }
 }
+
+const t3 = (f: Frame) => f.t;

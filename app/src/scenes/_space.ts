@@ -226,3 +226,91 @@ export function pullK(audio: AudioData, lyrics: { get(q: string, nth?: number): 
   // boot's choreography lands on the ring (its bar 4) on the song's 7th downbeat
   return prog(t, audio.downbeats[6]!, front.start - 0.15);
 }
+
+// ---------------------------------------------------------------- stage and line helpers
+// (appended for airgap / lens / guard / touch / passkey / below's first line)
+
+/** The studio ground of `end`: ink with a soft pool of light centred at (x, y) px. `a` dims it. */
+export function studio(c: CanvasRenderingContext2D, x: number, y: number, a = 1, r = H * 0.85, core = [26, 29, 27]) {
+  c.fillStyle = '#0A0B0A';
+  c.fillRect(0, 0, W, H);
+  const g = c.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, `rgba(${core[0]},${core[1]},${core[2]},${a})`);
+  g.addColorStop(1, 'rgba(10,11,10,0)');
+  c.fillStyle = g;
+  c.fillRect(0, 0, W, H);
+}
+
+/** Device-space points to world under a pose (anything with `toWorld`, i.e. a Device3D). */
+export const toW = (dev: { toWorld(p: DevicePose, q: V3): V3 }, pose: DevicePose, pts: V3[]): V3[] => pts.map((q) => dev.toWorld(pose, q));
+
+/**
+ * A world polyline into a 3D LineBatch, drawn from `from` (fraction of its length) up to `to`; a
+ * closed loop wraps round. Returns the pen's world position (the end of what is drawn), or null.
+ */
+export function path3D(b: LineBatch, pts: V3[], from: number, to: number, width: number, rgb: [number, number, number], alpha = 1, closed = false): V3 | null {
+  const P = closed ? [...pts, pts[0]!] : pts;
+  const n = P.length;
+  if (n < 2 || to <= from) return null;
+  const L = [0];
+  for (let i = 1; i < n; i++) L.push(L[i - 1]! + Math.hypot(...sub(P[i]!, P[i - 1]!)));
+  const tot = L[n - 1]!;
+  const at = (s: number): V3 => {
+    s = ((s % tot) + tot) % tot;
+    let i = 1;
+    while (i < n - 1 && L[i]! < s) i++;
+    const u = (s - L[i - 1]!) / Math.max(1e-9, L[i]! - L[i - 1]!);
+    return mix3(P[i - 1]!, P[i]!, clamp(u));
+  };
+  const s0 = from * tot, s1 = to * tot;
+  // walk the vertices between s0 and s1 (possibly wrapping)
+  let prev = at(s0), s = s0;
+  const base = Math.floor(s0 / tot) * tot;
+  let i = 1;
+  while (i < n && base + L[i]! <= s0) i++;
+  let lap = base;
+  for (;;) {
+    if (i >= n) { lap += tot; i = 1; }
+    const sv = lap + L[i]!;
+    if (sv >= s1) break;
+    const q = P[i]!;
+    b.seg(prev[0], prev[1], prev[2], q[0], q[1], q[2], width, rgb[0], rgb[1], rgb[2], alpha);
+    prev = q; s = sv; i++;
+    if (s - s0 > tot * 4) break;
+  }
+  const e = at(s1);
+  b.seg(prev[0], prev[1], prev[2], e[0], e[1], e[2], width, rgb[0], rgb[1], rgb[2], alpha);
+  return e;
+}
+
+/** A glowing point in 3D (the pen head of a traced line): stacked short fat segments, px widths. */
+export function glow3D(b: LineBatch, p: V3, size: number, rgb: [number, number, number], I = 1) {
+  const e = 1e-4;
+  b.seg(p[0], p[1], p[2], p[0] + e, p[1], p[2], size * 5, rgb[0] * 0.35 * I, rgb[1] * 0.35 * I, rgb[2] * 0.35 * I, 0.35);
+  b.seg(p[0], p[1], p[2], p[0] + e, p[1], p[2], size * 2.2, rgb[0] * 1.6 * I, rgb[1] * 1.6 * I, rgb[2] * 1.6 * I, 0.8);
+  b.seg(p[0], p[1], p[2], p[0] + e, p[1], p[2], size, 4 * I, 4 * I, 4 * I, 1);
+}
+
+/** Fill a world polygon (projected) on a Canvas2D; false if any vertex is behind the camera. */
+export function fill3D(c: CanvasRenderingContext2D, pose: DevicePose, pts: V3[]): boolean {
+  const path = new Path2D();
+  for (let i = 0; i < pts.length; i++) {
+    const a = projW(pose, pts[i]!);
+    if (a.z <= 0.02) return false;
+    if (i) path.lineTo(a.x, a.y); else path.moveTo(a.x, a.y);
+  }
+  path.closePath();
+  c.fill(path);
+  return true;
+}
+
+/** A rounded rectangle on a plane (centre cx, cy in plane units), as a closed world polyline. */
+export function rrect3D(pl: Plane, cx: number, cy: number, w: number, h: number, r: number, n = 8, z = 0): V3[] {
+  const pts: V3[] = [];
+  const cs: [number, number, number][] = [[w / 2 - r, h / 2 - r, 0], [-(w / 2 - r), h / 2 - r, Math.PI / 2], [-(w / 2 - r), -(h / 2 - r), Math.PI], [w / 2 - r, -(h / 2 - r), Math.PI * 1.5]];
+  for (const [x, y, a0] of cs) for (let i = 0; i <= n; i++) {
+    const a = a0 + (i / n) * (Math.PI / 2);
+    pts.push(onPlane(pl, cx + x + Math.cos(a) * r, cy + y + Math.sin(a) * r, z));
+  }
+  return pts;
+}
