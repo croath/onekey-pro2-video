@@ -15,19 +15,33 @@ import numpy as np
 import soundfile as sf
 
 # Source regions to keep (seconds in audio/full/track.wav), all on downbeats.
-# Removed: the first half of the intro's wordless chops, the "Hold it, sign it, go" echo
-# after chorus 1, most of the "ooh" lift before chorus 2, and the 18 s break before the
-# outro. The tail keeps one bar after the music stops, faded.
+# Removed: the intro's wordless chops before 10.4 (the soft opening build before them is kept,
+# so the song doesn't start cold), the "Hold it, sign it, go" echo after chorus 1, most of the
+# "ooh" lift before chorus 2, and the middle of the break before the outro (from 2 bars after
+# chorus 2 to the last bar of the quiet breakdown). The ending runs to the end of the take: the
+# last hit at ~179 s rings out by itself.
 KEEP = [
-    (10.442, 75.886),   # intro (4 bars) .. chorus 1 incl. its held "go"
+    (0.000, 4.611),     # soft opening build up to the groove's first downbeat
+    (10.442, 75.886),   # intro groove (4 bars) .. chorus 1 incl. its held "go"
     (79.698, 125.140),  # pickup into verse 2 .. bridge
-    (128.902, 147.716), # end of the lift (pickup) .. chorus 2
-    (164.619, 177.741), # pickup into "OneKey Pro 2" .. outro
+    (128.902, 151.478), # end of the lift (pickup) .. chorus 2 .. 2 bars of its held "go" / "oh"
+    (162.748, 181.200), # last bar of the breakdown, pickup, "OneKey Pro 2", outro to the end
 ]
+# The lead vocal is faded out over these source spans (mix minus a growing share of the Demucs
+# vocal stem), so the splice after them lands on the band alone instead of chopping the melody.
+# The stem excerpt is committed (audio/full/vocals_<t0>-<t1>.wav, 48 kHz) since the stems
+# themselves are not.
+VOCAL_FADES = [(149.597, 151.478, 'audio/full/vocals_149.4-151.7.wav', 149.4)]  # a, b, stem, stem start
 XFADE = 0.030  # s, at each splice
-FADE_OUT = 1.5  # s, at the very end
+FADE_OUT = 0.3  # s, at the very end (the take has already decayed to about -46 dB)
 
 src, sr = sf.read('audio/full/track.wav', always_2d=True)
+for a, b, path, t0 in VOCAL_FADES:
+    voc, vsr = sf.read(path, always_2d=True)
+    assert vsr == sr
+    i0, ia, ib = int(round(t0 * sr)), int(round(a * sr)), int(round(b * sr))
+    g = np.cos(np.linspace(0, np.pi / 2, ib - ia))[:, None]  # vocal gain 1 -> 0
+    src[ia:ib] -= (1 - g) * voc[ia - i0:ib - i0]
 xf = int(XFADE * sr)
 out = None
 for a, b in KEEP:
@@ -50,7 +64,7 @@ offsets = []  # (src_start, src_end, dst_start)
 d = 0.0
 for a, b in KEEP:
     offsets.append((a, b, d))
-    d += b - a
+    d += b - a - (xf // 2) / sr  # each splice overlaps the next region by half the crossfade
 
 
 def remap(t):
@@ -93,11 +107,13 @@ for s in au['sections']:
         lo, hi = max(a, s['start']), min(b, s['end'])
         if hi - lo > 0.05:
             st, en = round(d0 + lo - a, 3), round(d0 + hi - a, 3)
-            if secs and secs[-1]['name'] == s['name'] and abs(secs[-1]['end'] - st) < 1e-3:
+            if secs and secs[-1]['name'] == s['name'] and abs(secs[-1]['end'] - st) < 0.02:
                 secs[-1]['end'] = en
             else:
                 secs.append({'name': s['name'], 'start': st, 'end': en})
 secs[-1]['end'] = round(dur, 3)
+for p, q in zip(secs, secs[1:]):  # contiguous (the crossfade overlaps leave ~15 ms double-covered)
+    q['start'] = p['end']
 res['sections'] = secs
 n = int(dur * fps) + 1
 for k in ['rms', 'low', 'mid', 'high', 'vocal', 'drums', 'bass', 'other']:
