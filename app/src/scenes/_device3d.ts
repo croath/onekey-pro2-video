@@ -62,7 +62,8 @@ const MK = D.mark.h / KEY.height;
 const onePoly = KEY.one.map(([x, y]) => v2(-(x - KEY.centre.x) * MK - D.mark.x, -(y - KEY.centre.y) * MK + D.mark.y));
 const ringC = v2(-(KEY.ring.cx - KEY.centre.x) * MK - D.mark.x, -(KEY.ring.cy - KEY.centre.y) * MK + D.mark.y);
 
-const FRAG = /* glsl */ `
+const FRAG = (parts: boolean) => /* glsl */ `
+${parts ? '#define PARTS' : ''}
 ${SS_TAP_GLSL}
 uniform vec3 camPos, camTgt, devPos;
 uniform mat3 devRot; // world -> device
@@ -81,6 +82,7 @@ const float SEH = ${f4(SE_HALF)};
 
 vec3 fw, rt, up; // camera basis
 vec3 gPw; // the world point being shaded
+float gMinR, gMinT, gMinId; // the march's closest approach (distance / t), where, and to what
 
 float sdRoundRect(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
 // a rounded-rect plate of half thickness th, its edges rounded by re (re <= th)
@@ -90,6 +92,7 @@ float sdPlate(vec3 p, vec2 hs, float corner, float th, float re) {
   return min(max(w.x, w.y), 0.0) + length(max(w, 0.0)) - re;
 }
 
+#ifdef PARTS
 // ---- parts (ids: 0 cover, 1 display, 2 board, 3 chip, 4 battery, 5 frame, 6 back, 9 whole device)
 float zOff(int i) { return EZ[i] * explode + (i < 2 ? lift : 0.0); }
 vec2 mapParts(vec3 p, bool noCover) {
@@ -118,15 +121,21 @@ vec2 mapParts(vec3 p, bool noCover) {
   if (show[5] > 0.5) { d = sdPlate(p - vec3(0, 0, -TH + 0.006 + zOff(5)), HALF - 0.004, CORNER - 0.004, 0.006, 0.005); if (d < r.x) r = vec2(d, 6.0); }
   return r;
 }
+#endif
 vec2 mapDev(vec3 p, bool noCover) {
-  if (explode < 1e-4) return vec2(sdPlate(p, HALF, CORNER, TH, RE), 9.0);
+#ifdef PARTS
   return mapParts(p, noCover);
+#else
+  return vec2(sdPlate(p, HALF, CORNER, TH, RE), 9.0);
+#endif
 }
 vec3 toDev(vec3 pw) { return devRot * (pw - devPos) / devScale; }
 vec2 map(vec3 pw, bool noCover) { vec2 r = mapDev(toDev(pw), noCover); r.x *= devScale; return r; }
 vec3 normalAt(vec3 pw, bool noCover) {
-  vec2 e = vec2(0.0005 * devScale, 0.0);
-  return normalize(vec3(map(pw + e.xyy, noCover).x - map(pw - e.xyy, noCover).x, map(pw + e.yxy, noCover).x - map(pw - e.yxy, noCover).x, map(pw + e.yyx, noCover).x - map(pw - e.yyx, noCover).x));
+  // tetrahedral differences: four map() calls instead of six
+  const vec2 k = vec2(1.0, -1.0);
+  float h = 0.0005 * devScale;
+  return normalize(k.xyy * map(pw + k.xyy * h, noCover).x + k.yyx * map(pw + k.yyx * h, noCover).x + k.yxy * map(pw + k.yxy * h, noCover).x + k.xxx * map(pw + k.xxx * h, noCover).x);
 }
 
 // ---- the studio. Sharp version for polished surfaces: a big top softbox, a tall strip left, a thin rim
@@ -245,6 +254,7 @@ vec3 matBand(vec3 p, vec3 r, float fres) {
   }
   return col;
 }
+#ifdef PARTS
 vec3 matBoard(vec3 p, vec3 n, vec3 r, float fres) {
   vec3 q = p - vec3(0, 0.02, 0);
   vec3 col = mix(C_INK, C_BLOOD, 0.05) * 0.5 + envRough(r, 1.2) * 0.006;
@@ -282,6 +292,7 @@ vec3 matBattery(vec3 p, vec3 n, vec3 r, float fres) {
   if (n.z < -0.7 || n.z > 0.7) col += C_GRAPHITE * 0.05 * step(abs(p.y + 0.3), 0.03) * step(abs(p.x), 0.25);
   return col;
 }
+#endif
 vec3 matCover(vec3 r, float fres) { return env(r) * mix(0.06, 1.0, fres); }
 
 // shade a hit (world point, ray dir); returns colour and, for the cover glass, its opacity
@@ -298,7 +309,7 @@ vec4 shade(vec3 pw, vec3 rd, float id, bool noCover) {
     if (n.z < -0.8) return vec4(matBack(p, nw, r, fres, px), 1.0);
     return vec4(matBand(p, r, fres), 1.0);
   }
-  if (id < 0.5) return vec4(matCover(r, fres), 0.1 + 0.9 * fres);
+#ifdef PARTS
   if (id < 1.5) return vec4(n.z > 0.8 ? matScreen(p, r, fres) + env(r) * 0.05 : C_INK * 0.3 + env(r) * 0.2 * fres, 1.0);
   if (id < 2.5) return vec4(matBoard(p, n, r, fres), 1.0);
   if (id < 3.5) return vec4(matChip(p, n, r, fres, px), 1.0);
@@ -306,15 +317,33 @@ vec4 shade(vec3 pw, vec3 rd, float id, bool noCover) {
   if (id < 5.5) return vec4(matBand(p, r, fres), 1.0);
   if (n.z < -0.8) return vec4(matBack(p, nw, r, fres, px), 1.0);
   return vec4(matFrosted(p, nw, r, fres) * 0.5, 1.0);
+#else
+  return vec4(0.0);
+#endif
 }
 
-// march; returns t (or -1) and the part id
-vec2 march(vec3 ro, vec3 rd, float t0, float t1, bool noCover) {
+// march; returns t (or -1) and the part id. Tracks the closest approach for silhouette antialiasing.
+// With PARTS the cover glass is see-through: on hitting it the march notes where (gCoverT) and carries on.
+float gCoverT;
+vec2 march(vec3 ro, vec3 rd, float t0, float t1) {
   float t = t0;
-  for (int i = 0; i < 160; i++) {
+  bool noCover = false;
+  gMinR = 1e3; gMinT = t0; gMinId = 9.0; gCoverT = -1.0;
+#ifdef PARTS
+  for (int i = 0; i < 128; i++) {
+#else
+  for (int i = 0; i < 80; i++) {
+#endif
     vec3 p = ro + rd * t;
     vec2 d = map(p, noCover);
-    if (d.x < 0.0003 * t) return vec2(t, d.y);
+    if (d.x < 0.0003 * t) {
+#ifdef PARTS
+      if (d.y < 0.5) { gCoverT = t; noCover = true; t += 0.014 * devScale; continue; }
+#endif
+      return vec2(t, d.y);
+    }
+    float ratio = d.x / t;
+    if (ratio < gMinR) { gMinR = ratio; gMinT = t; gMinId = d.y; }
     t += d.x * 0.9;
     if (t > t1) break;
   }
@@ -323,7 +352,8 @@ vec2 march(vec3 ro, vec3 rd, float t0, float t1, bool noCover) {
 
 vec4 trace(vec2 px) {
   vec2 uv = (px - vec2(${(W / 2).toFixed(1)}, ${(H / 2).toFixed(1)})) / ${(H / 2).toFixed(1)};
-  vec3 rd = normalize(fw + (uv.x * rt + uv.y * up) * tan(fov * 0.5));
+  float tf = tan(fov * 0.5);
+  vec3 rd = normalize(fw + (uv.x * rt + uv.y * up) * tf);
   // bounding sphere
   float R = devScale * (0.96 + 0.9 * explode + lift);
   vec3 oc = camPos - devPos;
@@ -331,24 +361,32 @@ vec4 trace(vec2 px) {
   if (h < 0.0) return vec4(0.0);
   h = sqrt(h);
   float t0 = max(-b - h, 0.0), t1 = -b + h;
-  vec2 hit = march(camPos, rd, t0, t1, false);
-  if (hit.x < 0.0) return vec4(0.0);
-  vec4 s = shade(camPos + rd * hit.x, rd, hit.y, false);
-  if (s.a > 0.999) return vec4(s.rgb, 1.0);
-  // the cover glass: see through it to the parts beneath
-  vec2 hit2 = march(camPos, rd, hit.x + 0.01 * devScale, t1, true);
-  vec4 u = hit2.x < 0.0 ? vec4(0.0) : vec4(shade(camPos + rd * hit2.x, rd, hit2.y, true).rgb, 1.0);
-  return vec4(s.rgb * s.a + u.rgb * (1.0 - s.a), s.a + u.a * (1.0 - s.a));
+  vec2 hit = march(camPos, rd, t0, t1);
+  float cov = 1.0, tt = hit.x, id = hit.y;
+  if (hit.x < 0.0) {
+    // a near miss: partial coverage over about a pixel, shaded at the closest approach
+    cov = 1.0 - smoothstep(0.0, tf / ${(H / 2).toFixed(1)} * 1.2, gMinR);
+    tt = gMinT; id = gMinId;
+  }
+  vec4 col = cov > 0.0 ? vec4(shade(camPos + rd * tt, rd, id, true).rgb * cov, cov) : vec4(0.0);
+#ifdef PARTS
+  if (gCoverT > 0.0) {
+    // the cover glass over what lies beneath: its normal is the device's z axis
+    vec3 nz = normalize(transpose(devRot) * vec3(0.0, 0.0, 1.0));
+    vec3 nw = dot(nz, rd) < 0.0 ? nz : -nz;
+    float fres = pow(1.0 - max(dot(nw, -rd), 0.0), 5.0);
+    float a = 0.1 + 0.9 * fres;
+    col = vec4(env(reflect(rd, nw)) * mix(0.06, 1.0, fres) * a, a) + col * (1.0 - a);
+  }
+#endif
+  return col;
 }
 
 void main() {
   fw = normalize(camTgt - camPos); rt = normalize(cross(fw, vec3(0.0, 1.0, 0.0))); up = cross(rt, fw);
-  vec4 acc = vec4(0.0);
-  for (int k = ssK0(); k < ssK1(); k++) {
-    vec4 s = trace(FRAG_PX + rgss(k));
-    acc += s; // premultiplied
-  }
-  acc *= ssWeight();
+  // one ray per pixel (silhouettes are antialiased in the march); on export the engine cycles the
+  // rotated-grid taps over the motion-blur sub-frames
+  vec4 acc = trace(FRAG_PX + (ssTap >= 0 ? rgss(ssTap) : vec2(0.0)));
   fragColor = vec4(acc.rgb * gain, acc.a);
 }`;
 
@@ -369,16 +407,24 @@ function rotMat([yaw, pitch, roll]: V3): number[] {
 export class Device3D {
   rt = makeRT();
   screen = new Layer2D(SCREEN.w, SCREEN.h);
-  pass = new FSPass(FRAG, {
+  private uniforms: Record<string, THREE.IUniform> = {
     ssTap: SS_TAP,
     camPos: { value: new THREE.Vector3() }, camTgt: { value: new THREE.Vector3() }, devPos: { value: new THREE.Vector3() },
     devRot: { value: new THREE.Matrix3() }, fov: { value: 0.6 }, devScale: { value: 1 }, sweep: { value: 9 }, glint: { value: 0 },
     screenOn: { value: 0 }, explode: { value: 0 }, lift: { value: 0 }, gain: { value: 1 }, show: { value: [1, 1, 1, 1, 1, 1] },
     se: { value: new THREE.Vector4() }, screenTex: { value: null },
-  });
+  };
+  // two builds of the shader: the whole device, and (only when exploded) its parts. The software GPU
+  // runs every branch of a shader, so the solid build leaves the parts out entirely.
+  private solid: FSPass | null = null;
+  private parts: FSPass | null = null;
+  pass(explode: boolean) {
+    if (explode) return (this.parts ??= new FSPass(FRAG(true), this.uniforms));
+    return (this.solid ??= new FSPass(FRAG(false), this.uniforms));
+  }
 
   render(renderer: THREE.WebGLRenderer, p: DevicePose, uploadScreen = (p.screen ?? 0) > 0) {
-    const u = this.pass.u;
+    const u = this.uniforms;
     (u.camPos!.value as THREE.Vector3).set(...p.cam);
     (u.camTgt!.value as THREE.Vector3).set(...p.tgt);
     (u.devPos!.value as THREE.Vector3).set(...(p.pos ?? [0, 0, 0]));
@@ -398,7 +444,7 @@ export class Device3D {
     if (uploadScreen) u.screenTex!.value = this.screen.upload();
     else if (!u.screenTex!.value) u.screenTex!.value = this.screen.texture;
     clearRT(renderer, this.rt, [0, 0, 0], 0);
-    this.pass.render(renderer, this.rt);
+    this.pass((p.explode ?? 0) > 0).render(renderer, this.rt);
     return this.rt.texture;
   }
 
