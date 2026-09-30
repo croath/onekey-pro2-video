@@ -15,8 +15,9 @@ import { Layer2D, W, H } from '../engine/gl';
 import { rgba } from '../engine/palette';
 import { F, fitSize, font } from '../engine/type';
 import { Lyrics, type Line, type Word } from '../engine/lyrics';
-import { clamp, ease, lerp, prog, TAU } from '../engine/util';
+import { clamp, ease, lerp, prog, springStep, TAU } from '../engine/util';
 import { KEY, devicePath, keyHead2D, keyMarkPath, keyPt, lyricLine } from './_motifs';
+import { Device3D, SCREEN, orbit, type DevicePose } from './_device3d';
 
 const CODE = [
   'fn sign(tx: &Transaction) -> Result<Signature> {',
@@ -35,6 +36,8 @@ const CODE = [
 
 export default class Hook extends Scene {
   text = new Layer2D();
+  front = new Layer2D();
+  dev = new Device3D();
   n = 1;
   keep!: Line; only!: Line; twenty!: Line; one!: Line; hold!: Line; open: Line | null = null;
 
@@ -71,6 +74,8 @@ export default class Hook extends Scene {
     for (const s of segs) if (t >= (s[1] === 'only' ? s[0].words[0]!.start - 0.05 : this.cutAt(s[0])) - 1e-6) seg = s;
     const [line, kind] = seg;
     let flash = 0;
+    let devPose: DevicePose | null = null, devOpacity = 1, screen: 'mark' | 'signed' = 'mark';
+    let caption: Line | null = null;
 
     /** A word slammed full frame: scales down onto the frame on its start. */
     const slam = (w: Word, label: string, y = H * 0.5) => {
@@ -155,9 +160,16 @@ export default class Hook extends Scene {
       // 24 masked cells: 6 x 4
       const cols = 6, rows = 4, cw = 230, ch = 96, gx = 26, gy = 26;
       const gw = cols * cw + (cols - 1) * gx, gh = rows * ch + (rows - 1) * gy;
-      const x0 = (W - gw) / 2, y0 = H * 0.42 - gh / 2;
+      const x0 = (W - gw) / 2, y0 = H * 0.5 - gh / 2;
       const b0 = audio.beatAt(line.words[0]!.start);
       const never = line.words.find((w) => w.w.startsWith('never'))!;
+      // the sung words are written into the cells that light as they are sung; the rest stay masked
+      const inCell = new Map<number, Word>();
+      for (const w of line.words) {
+        let i = Math.max(0, Math.min(23, Math.floor((audio.beatAt(w.start) - b0) * 4 + 1e-3)));
+        while (inCell.has(i) && i < 23) i++;
+        inCell.set(i, w);
+      }
       for (let i = 0; i < 24; i++) {
         const cx = x0 + (i % cols) * (cw + gx), cy = y0 + Math.floor(i / cols) * (ch + gy);
         const on = f.beat >= b0 + i * 0.25;
@@ -174,14 +186,25 @@ export default class Hook extends Scene {
           c.font = font(F.mono(400), 20);
           c.fillStyle = FG(0.6);
           c.fillText(String(i + 1).padStart(2, '0'), -cw / 2 + 14, -ch / 2 + 28);
-          if (on) {
+          const w = inCell.get(i);
+          if (w && t >= w.start - 0.02) {
+            // a sung word, in the cell (the lyric itself, never a recovery word)
+            const label = w.w.replace(/[^A-Za-z-]/g, '');
+            const fam = F.archivo(100, 800);
+            const sz = Math.min(50, fitSize(label, fam, cw - 70, 50));
+            const k = prog(t, w.start - 0.02, w.start + 0.12, ease.outExpo);
+            c.font = font(fam, sz);
+            c.fillStyle = n2 ? rgba('ink') : rgba('signal');
+            c.globalAlpha = clamp(k * 3);
+            c.fillText(label, -cw / 2 + 58, sz * 0.36 + (1 - k) * 12);
+            c.globalAlpha = 1;
+          } else if (on) {
             c.fillStyle = FG(0.92);
-            c.fillRect(-cw / 2 + 58, -14, cw - 80, 28); // the masked word: never a real one
+            c.fillRect(-cw / 2 + 58, -14, cw - 80, 28); // a masked word: never a real one
           }
         }
         c.restore();
       }
-      lyricLine(c, line, t, 120, H - 90, { family: F.archivo(100, 800), size: 72, on: FG(), off: FG(0.3) });
     } else if (kind === 'open') {
       // illustrative code scrolling up; the sung line highlighted
       const words = line.words;
@@ -206,61 +229,101 @@ export default class Hook extends Scene {
       void sung;
       lyricLine(c, line, t, 120, H - 90, { family: F.archivo(112, 900), size: 80, on: FG(), off: FG(0.3) });
     } else if (kind === 'one') {
-      // "1" on "One", "O" on "key": the key mark, big
+      // "1" on "One", "O" on "key": the key mark, big; on "OneKey" it lands on the real device's screen
       const wOne = line.words[0]!, wKey = line.words[1]!, wOK = line.words[2]!;
       const MH = 560, cx = W / 2, cy = H * 0.43;
       const k1 = prog(t, wOne.start - 0.02, wOne.start + 0.14, ease.outExpo);
       const k2 = prog(t, wKey.start - 0.02, wKey.start + 0.14, ease.outExpo);
+      const devIn = prog(t, wOK.start - 0.08, wOK.start + 0.35, ease.inOutCubic);
       const col = n2 ? rgba('ink') : rgba('signal');
       const k = MH / KEY.height;
+      c.save();
+      // the big mark shrinks into the screen as the device arrives
+      const ms = lerp(1, 0.32, devIn);
+      c.translate(cx, cy); c.scale(ms, ms); c.translate(-cx, -cy);
+      c.globalAlpha = 1 - devIn;
       if (k1 > 0) {
         c.save();
         c.translate(0, lerp(-240, 0, k1));
         c.beginPath();
         KEY.one.forEach((q, i) => { const p = keyPt(q, cx, cy, MH); if (i) c.lineTo(p.x, p.y); else c.moveTo(p.x, p.y); });
         c.closePath();
-        c.fillStyle = col; c.globalAlpha = clamp(k1 * 3); c.fill();
+        c.fillStyle = col; c.globalAlpha = clamp(k1 * 3) * (1 - devIn); c.fill();
         c.restore();
       }
       if (k2 > 0) {
         const rc = keyPt([KEY.ring.cx, KEY.ring.cy], cx, cy, MH);
-        const s = lerp(1.6, 1, k2);
+        const s2 = lerp(1.6, 1, k2);
         c.save();
-        c.globalAlpha = clamp(k2 * 3);
+        c.globalAlpha = clamp(k2 * 3) * (1 - devIn);
         c.beginPath();
-        c.arc(rc.x, rc.y, KEY.ring.R * k * s, 0, TAU);
-        c.arc(rc.x, rc.y, KEY.ring.r * k * s, 0, TAU, true);
+        c.arc(rc.x, rc.y, KEY.ring.R * k * s2, 0, TAU);
+        c.arc(rc.x, rc.y, KEY.ring.r * k * s2, 0, TAU, true);
         c.fillStyle = col; c.fill('evenodd');
         c.restore();
       }
+      c.restore();
       flash = Math.max(flash, (n2 ? 0 : 0.04) * (Math.pow(0.5, Math.max(0, t - wOne.start) / 0.03) * (t >= wOne.start ? 1 : 0) + Math.pow(0.5, Math.max(0, t - wKey.start) / 0.03) * (t >= wKey.start ? 1 : 0)));
-      const ko = prog(t, wOK.start, wOK.start + 0.3, ease.outCubic);
-      if (ko > 0) {
-        c.font = font(F.archivo(100, 900), 64);
+      if (devIn > 0) {
+        // "all yours": it turns a little towards us, three-quarter
+        const yours = prog(t, line.words[3]?.start ?? wOK.end, line.words[line.words.length - 1]!.end + 0.4, ease.inOutCubic);
+        const T: [number, number, number] = [0.5, -0.06, 0];
+        devPose = { cam: orbit(T, lerp(6.0, 5.2, devIn), 0, 0.05), tgt: T, fov: 0.5, rot: [lerp(0, -0.42, yours), lerp(0, 0.06, yours), 0], screen: 1, sweep: lerp(-1.4, 1.4, yours) };
+        devOpacity = devIn;
+        screen = 'mark';
+        const ko = prog(t, wOK.start, wOK.start + 0.3, ease.outCubic);
+        c.font = font(F.archivo(100, 900), 96);
         c.fillStyle = FG(ko);
-        const rc = keyPt([KEY.ring.cx, KEY.ring.cy], cx, cy, MH);
-        c.fillText('OneKey', rc.x + KEY.ring.R * k + 48, rc.y + 22);
+        c.fillText('OneKey', W * 0.56, H * 0.49);
       }
-      lyricLine(c, line, t, 120, H - 90, { family: F.archivo(100, 800), size: 72, on: FG(), off: FG(0.3) });
+      caption = line;
     } else {
-      // HOLD / SIGN / GO, then the mark holds for the next plate
+      // HOLD / SIGN / GO slam behind the real device: held up on "Hold", signed on "sign", a spin on
+      // "go"; then it keeps turning slowly with the mark on its screen for the next plate
       const hw = line.words;
       const hold = hw.find((w) => w.w.startsWith('Hold'))!, sign = hw.find((w) => w.w.startsWith('sign'))!, go = hw[hw.length - 1]!;
       const after = t >= go.end - 0.1;
       if (!after) {
         const w = t >= go.start ? go : t >= sign.start ? sign : hold;
         slam(w, w === go ? 'GO' : w === sign ? 'SIGN' : 'HOLD');
-      } else {
-        const k = prog(t, go.end - 0.1, go.end + 0.4, ease.outCubic);
-        const m = keyMarkPath(W / 2, H * 0.47, lerp(700, 300, k));
-        c.fillStyle = n2 ? rgba('ink') : rgba('signal');
-        c.globalAlpha = clamp(k * 2);
-        c.fill(m, 'evenodd');
-        c.globalAlpha = 1;
       }
+      const pop = t >= hold.start ? springStep(t - hold.start, 3.2, 0.45) : 0;
+      const spin = prog(t, go.start - 0.05, go.start + 0.8, ease.inOutCubic);
+      const drift = Math.max(0, t - (go.start + 0.8)) * 0.35;
+      const T: [number, number, number] = [0, 0, 0];
+      devPose = {
+        cam: orbit(T, 5.6, 0, 0.06), tgt: T, fov: 0.5, scale: lerp(0.7, 1, clamp(pop)),
+        rot: [-0.3 + spin * TAU + drift, 0.08, lerp(0.06, 0, spin)], screen: 1,
+        sweep: lerp(-1.4, 1.4, prog(t, sign.start, sign.start + 0.8, ease.inOutCubic)),
+      };
+      devOpacity = prog(t, this.cutAt(line), this.cutAt(line) + 0.15);
+      screen = t >= sign.start && t < go.start + 0.4 ? 'signed' : 'mark';
     }
 
     comp.draw(renderer, this.text.upload(), out);
+    if (devPose) {
+      const sc = this.dev.screen.ctx;
+      this.dev.screen.clear(rgba('ink'));
+      if (screen === 'signed') {
+        sc.strokeStyle = rgba('signal');
+        sc.lineWidth = 18; sc.lineCap = 'round';
+        sc.beginPath(); sc.moveTo(SCREEN.w * 0.3, SCREEN.h * 0.45); sc.lineTo(SCREEN.w * 0.45, SCREEN.h * 0.54); sc.lineTo(SCREEN.w * 0.72, SCREEN.h * 0.36); sc.stroke();
+        sc.lineCap = 'butt';
+        sc.font = font(F.archivo(100, 800), 64);
+        sc.fillStyle = rgba('bone');
+        const tw = sc.measureText('Signed').width;
+        sc.fillText('Signed', (SCREEN.w - tw) / 2, SCREEN.h * 0.7);
+      } else {
+        sc.fillStyle = rgba('signal');
+        sc.fill(keyMarkPath(SCREEN.w / 2, SCREEN.h * 0.47, 200), 'evenodd');
+      }
+      comp.draw(renderer, this.dev.render(renderer, devPose), out, { opacity: devOpacity });
+    }
+    if (caption) {
+      this.front.clear();
+      lyricLine(this.front.ctx, caption, t, 120, H - 90, { family: F.archivo(100, 800), size: 72, on: FG(), off: FG(0.3) });
+      comp.draw(renderer, this.front.upload(), out);
+    }
     return { bloom: n2 ? 0.08 : kind === 'keep' || kind === 'hold' ? 0.12 : 0.35, vignette: n2 ? 0.12 : 0.35, halation: n2 ? 0 : 0.2, flash };
   }
 }
