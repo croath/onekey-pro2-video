@@ -256,6 +256,7 @@ export function path3D(b: LineBatch, pts: V3[], from: number, to: number, width:
   for (let i = 1; i < n; i++) L.push(L[i - 1]! + Math.hypot(...sub(P[i]!, P[i - 1]!)));
   const tot = L[n - 1]!;
   const at = (s: number): V3 => {
+    if (!closed) { if (s >= tot) return P[n - 1]!; if (s <= 0) return P[0]!; } // an open path's end is its end, not its start
     s = ((s % tot) + tot) % tot;
     let i = 1;
     while (i < n - 1 && L[i]! < s) i++;
