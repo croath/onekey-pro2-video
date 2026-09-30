@@ -247,7 +247,7 @@ vec3 matBand(vec3 p, vec3 r, float fres) {
 }
 vec3 matBoard(vec3 p, vec3 n, vec3 r, float fres) {
   vec3 q = p - vec3(0, 0.02, 0);
-  vec3 col = mix(C_INK, C_BLOOD, 0.05) * 0.5 + envRough(r, 1.2) * 0.05;
+  vec3 col = mix(C_INK, C_BLOOD, 0.05) * 0.5 + envRough(r, 1.2) * 0.006;
   if (n.z > 0.7) {
     // routed traces: short straight runs on a fine grid, and a few vias
     vec2 g = q.xy * 44.0, cell = floor(g), f = fract(g) - 0.5;
@@ -269,8 +269,10 @@ vec3 matChip(vec3 p, vec3 n, vec3 r, float fres, float px) {
       // the laser-etched pin-1 dot and a green glow from the die when it lights
       float dot1 = 1.0 - smoothstep(0.006 - px, 0.006 + px, length(d - vec2(-SEH * 0.62, SEH * 0.62)));
       col += C_GRAPHITE * 0.25 * dot1;
-      if (n.z > 0.7) col += C_SIGNAL * g * (0.25 + 1.6 * exp(-dot(d, d) * 900.0));
-      else col += C_SIGNAL * g * 0.6;
+      // a lit die: a soft green core under the lid and a green rim where the lid meets the sides
+      float rim = 1.0 - smoothstep(0.0, 0.012, SEH - max(abs(d.x), abs(d.y)));
+      if (n.z > 0.7) col += C_SIGNAL * g * (0.02 + 0.2 * exp(-dot(d, d) * 1400.0) + 1.1 * rim);
+      else col += C_SIGNAL * g * 0.15;
     }
   }
   return col;
@@ -400,11 +402,16 @@ export class Device3D {
     return this.rt.texture;
   }
 
-  /** Logical px (x right, y down) and camera depth of a device-space point under a pose. */
-  project(p: DevicePose, q: V3): { x: number; y: number; z: number } {
+  /** World position of a device-space point under a pose. */
+  toWorld(p: DevicePose, q: V3): V3 {
     const m = rotMat(p.rot ?? [0, 0, 0]);
     const s = p.scale ?? 1, o = p.pos ?? [0, 0, 0];
-    const w: V3 = [0, 1, 2].map((i) => o[i]! + s * (m[i * 3]! * q[0] + m[i * 3 + 1]! * q[1] + m[i * 3 + 2]! * q[2])) as V3;
+    return [0, 1, 2].map((i) => o[i]! + s * (m[i * 3]! * q[0] + m[i * 3 + 1]! * q[1] + m[i * 3 + 2]! * q[2])) as V3;
+  }
+
+  /** Logical px (x right, y down) and camera depth of a device-space point under a pose. */
+  project(p: DevicePose, q: V3): { x: number; y: number; z: number } {
+    const w = this.toWorld(p, q);
     const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
     const dot = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     const norm = (a: V3): V3 => { const l = Math.hypot(...a); return [a[0] / l, a[1] / l, a[2] / l]; };
@@ -426,6 +433,15 @@ export function outline(n = 96, grow = 0): V3[] {
     pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r, 0]);
   }
   return pts;
+}
+
+/**
+ * Set `c`'s transform so that drawing in a 100 × 100 box lands on a device-space quad: (0,0) at `a`,
+ * (100,0) at `b`, (0,100) at `d` (an affine approximation of the perspective; fine for small quads).
+ */
+export function mapQuad(c: CanvasRenderingContext2D, dev: Device3D, pose: DevicePose, a: V3, b: V3, d: V3) {
+  const A = dev.project(pose, a), B = dev.project(pose, b), D = dev.project(pose, d);
+  c.setTransform((B.x - A.x) / 100, (B.y - A.y) / 100, (D.x - A.x) / 100, (D.y - A.y) / 100, A.x, A.y);
 }
 
 /** A camera orbiting `tgt` at distance `dist`: yaw about y (0 = looking at the display), pitch up. */

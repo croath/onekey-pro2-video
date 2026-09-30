@@ -1,7 +1,8 @@
-// `boot` (intro, 4 bars) — docs/TREATMENT.md: a green point wakes like a standby light on the
-// beat, writes the "1" of the key mark (bar 2) and the "O" (bar 3), the strokes swell into the
-// solid mark, and in bar 4 the camera dives into the "O", which turns into the metal ring of the
-// rear camera. Hard cut to `slab` on the next downbeat.
+// `boot` (intro, ~6 bars) — docs/TREATMENT.md: a green point wakes like a standby light and breathes
+// through the song's soft opening (bars 1–2), writes the "1" of the key mark (bar 3) and the "O"
+// (bar 4) as the drums come in, the strokes swell into the solid mark (held for bar 5), and in bar 6
+// the camera dives into the "O", which turns into the metal ring of the rear camera. Hard cut to
+// `slab` on the vocal's entry.
 import type * as THREE from 'three';
 import { Scene, type Frame } from '../engine/scene';
 import { FSPass, Layer2D, W, H } from '../engine/gl';
@@ -27,6 +28,15 @@ function along(pts: P2[], s: number): P2 {
 }
 const plen = (pts: P2[]) => pts.slice(1).reduce((L, b, i) => L + Math.hypot(b.x - pts[i]!.x, b.y - pts[i]!.y), 0);
 
+/** Local bar (0 = the first downbeat) -> the choreography's bar: 2 bars of standby for the soft
+ * opening, then the writing, a bar holding the solid mark, then the dive. */
+function chor(b: number): number {
+  if (b < 2) return b / 2;
+  if (b < 4.05) return b - 1;
+  if (b < 5) return 3.05;
+  return b - 2;
+}
+
 export default class Boot extends Scene {
   bg = new FSPass(
     /* glsl */ `
@@ -51,7 +61,8 @@ export default class Boot extends Scene {
   render(f: Frame, out: THREE.WebGLRenderTarget) {
     const { renderer, comp, audio } = this.ctx;
     // local bar position: 0 at the scene's first downbeat
-    const b = f.bar - audio.barAt(this.ctx.start);
+    const b0 = f.bar - audio.barAt(audio.downbeats[0]!);
+    const b = chor(b0);
 
     // ---- camera: in bar 4 dive towards the ring centre
     const ringC0 = keyPt([KEY.ring.cx, KEY.ring.cy], CX, CY, MARK_H);
@@ -75,7 +86,7 @@ export default class Boot extends Scene {
 
     // where the pen is at time t (for the head and its particles)
     const headAt = (t: number): P2 | null => {
-      const bb = audio.barAt(t) - audio.barAt(this.ctx.start);
+      const bb = chor(audio.barAt(t) - audio.barAt(audio.downbeats[0]!));
       if (bb < 1.0) {
         const p0 = onePts[0]!;
         // standby: resting at the pen's start, drifting in from the centre during bar 1
@@ -102,6 +113,15 @@ export default class Boot extends Scene {
     const green = rgba('signal', 1);
 
     if (swell < 1) {
+      c.save();
+      if (swell > 0) {
+        // as the strokes swell they fill the mark's own outline and never spill past it
+        c.translate(target.x, target.y);
+        c.scale(zoom, zoom);
+        c.translate(-ringC0.x, -ringC0.y);
+        c.clip(keyMarkPath(CX, CY, MARK_H), 'evenodd');
+        c.setTransform(1, 0, 0, 1, 0, 0);
+      }
       c.strokeStyle = green;
       // "1": hairline growing to its full stroke width as it swells
       if (w1 > 0) {
@@ -123,6 +143,7 @@ export default class Boot extends Scene {
         c.arc(rc.x, rc.y, rMid, a0, a0 + w2 * TAU);
         c.stroke();
       }
+      c.restore();
     }
     if (swell > 0) {
       // the solid mark (exact logo outline) fades in over the swelling strokes
@@ -175,13 +196,13 @@ export default class Boot extends Scene {
     const h = headAt(f.t);
     if (h) {
       // bar 1: it breathes with the kick like a standby LED
-      const idle = b < 1 ? 0.55 + 0.45 * f.a.kick + 0.15 * Math.sin(f.t * 5) : 1;
-      const born = prog(b, 0.0, 0.12, ease.outCubic);
+      const idle = b < 1 ? 0.55 + 0.3 * f.a.kick + 0.2 * Math.sin(f.t * 2.4) : 1;
+      const born = prog(f.t, 0.15, 0.9, ease.outCubic);
       keyHead(this.lines, h.x, h.y, f.t, 1, idle * born);
       if (b >= 1) keyParticles(this.lines, f.t, headAt, { rate: 60, speed: 120, life: 0.35, intensity: 0.8 });
     }
     this.lines.render(renderer, out);
 
-    return { bloom: 0.6, vignette: 0.35, flash: 0.28 * Math.pow(0.5, Math.max(0, b - 2.85) / 0.03) * (b >= 2.85 ? 1 : 0) };
+    return { bloom: 0.6, vignette: 0.35, flash: 0.07 * Math.pow(0.5, Math.max(0, b - 2.85) / 0.03) * (b >= 2.85 ? 1 : 0) };
   }
 }
