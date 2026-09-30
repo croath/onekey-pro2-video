@@ -106,9 +106,11 @@ export default class End extends Scene {
       c.fillStyle = rgba('bone', 0.85);
       c.fillText('Hardware Wallet', x0 + 4, y0 + 88);
       c.globalAlpha = nameOut * prog(t, words[2]!.end + 1.2, words[2]!.end + 2);
-      c.font = font(F.mono(400), 24);
+      // 小鱼 in Chinese (Croath): Plex has no CJK, so it falls back to the system's Chinese sans
+      // (PingFang on a Mac, WenQuanYi in the export container)
+      c.font = `${font(F.mono(400), 24)}, "PingFang SC", "Hiragino Sans GB", "WenQuanYi Zen Hei", "Noto Sans CJK SC", sans-serif`;
       c.fillStyle = rgba('bone', 0.45);
-      c.fillText('Video by Croath (Xiaoyu) & Claude', x0 + 6, y0 + 190);
+      c.fillText('Video by Croath 小鱼 & Claude', x0 + 6, y0 + 190);
       c.globalAlpha = 1;
     }
     if (screenOff) {
