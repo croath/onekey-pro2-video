@@ -6,7 +6,7 @@ Status: soundtrack and timings done; plates to build. The concept and plates are
 
 ## Layout
 
-- `audio/track.wav` — the soundtrack as edited (2:36.5); `audio/full/track.wav` — the full Suno take (3:01). See [`docs/SONG.md`](docs/SONG.md).
+- `audio/track.wav` — the soundtrack as edited (2:38.3); `audio/full/track.wav` — the full Suno take (3:01). See [`docs/SONG.md`](docs/SONG.md).
 - `data/lyrics.json`, `data/audio.json` — word-level lyric timings and the music analysis (beats, downbeats, sections, onsets, envelopes) for the edit; `data/full/` — the same for the full take.
 - `analysis/` — `analyze_audio.py` (librosa), `transcribe_vocals.py` + `align_lyrics.py` (Demucs, Whisper, CTC alignment; need the models, see their headers), `cut_track.py` (makes the edit).
 - `app/src/engine/` — renderer core (post, typography, GPU lines, timing). See [`docs/ENGINE.md`](docs/ENGINE.md).

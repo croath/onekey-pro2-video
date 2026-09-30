@@ -17,13 +17,13 @@ import soundfile as sf
 # Source regions to keep (seconds in audio/full/track.wav), all on downbeats.
 # Removed: the intro's wordless chops before 10.4 (the soft opening build before them is kept,
 # so the song doesn't start cold), the "Hold it, sign it, go" echo after chorus 1, most of the
-# "ooh" lift before chorus 2, and the middle of the break before the outro (from 2 bars after
+# "ooh" lift before chorus 2 (its first bar stays, so the bridge's last word isn't cut), and the middle of the break before the outro (from 2 bars after
 # chorus 2 to the last bar of the quiet breakdown). The ending runs to the end of the take: the
 # last hit at ~179 s rings out by itself.
 KEEP = [
     (0.000, 4.611),     # soft opening build up to the groove's first downbeat
     (10.442, 75.886),   # intro groove (4 bars) .. chorus 1 incl. its held "go"
-    (79.698, 125.140),  # pickup into verse 2 .. bridge
+    (79.698, 127.024),  # pickup into verse 2 .. bridge, its last word "tonight" and 1 bar of the "ooh" lift
     (128.902, 151.478), # end of the lift (pickup) .. chorus 2 .. 2 bars of its held "go" / "oh"
     (162.748, 181.200), # last bar of the breakdown, pickup, "OneKey Pro 2", outro to the end
 ]
@@ -81,7 +81,9 @@ lines = []
 for ln in ly['lines']:
     words = []
     for w in ln['words']:
-        s, e = remap(w['start']), remap(w['end'] - 1e-3)
+        # a word held across a splice ends at the splice
+        cap = next((b for a, b in KEEP if a - 1e-6 <= w['start'] < b), w['end'])
+        s, e = remap(w['start']), remap(min(w['end'], cap) - 1e-3)
         if s is None:
             continue
         words.append({**w, 'start': s, 'end': round(e + 1e-3, 3) if e is not None else round(s + 0.2, 3)})

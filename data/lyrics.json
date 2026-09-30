@@ -1247,7 +1247,7 @@
   {
    "text": "Tap it once and you're in, no phishing link tonight",
    "start": 112.53,
-   "end": 115.583,
+   "end": 117.351,
    "words": [
     {
      "w": "Tap",
@@ -1306,260 +1306,260 @@
     {
      "w": "tonight",
      "start": 115.383,
-     "end": 115.583,
+     "end": 117.351,
      "conf": 0.173
     }
    ]
   },
   {
    "text": "Keep your keys at home",
-   "start": 117.252,
-   "end": 119.016,
+   "start": 119.136,
+   "end": 120.9,
    "words": [
     {
      "w": "Keep",
-     "start": 117.252,
-     "end": 117.373,
+     "start": 119.136,
+     "end": 119.257,
      "conf": 0.022
     },
     {
      "w": "your",
-     "start": 117.515,
-     "end": 117.636,
+     "start": 119.399,
+     "end": 119.52,
      "conf": 0.237
     },
     {
      "w": "keys",
-     "start": 117.717,
-     "end": 118.101,
+     "start": 119.601,
+     "end": 119.985,
      "conf": 0.228
     },
     {
      "w": "at",
-     "start": 118.121,
-     "end": 118.17,
+     "start": 120.005,
+     "end": 120.054,
      "conf": 0.222
     },
     {
      "w": "home",
-     "start": 118.465,
-     "end": 119.016,
+     "start": 120.349,
+     "end": 120.9,
      "conf": 0.237
     }
    ]
   },
   {
    "text": "Only the signatures go",
-   "start": 119.036,
-   "end": 121.013,
+   "start": 120.92,
+   "end": 122.897,
    "words": [
     {
      "w": "Only",
-     "start": 119.036,
-     "end": 119.338,
+     "start": 120.92,
+     "end": 121.222,
      "conf": 0.846
     },
     {
      "w": "the",
-     "start": 119.358,
-     "end": 119.579,
+     "start": 121.242,
+     "end": 121.463,
      "conf": 0.048
     },
     {
      "w": "signatures",
-     "start": 119.599,
-     "end": 120.3,
+     "start": 121.483,
+     "end": 122.184,
      "conf": 0.822
     },
     {
      "w": "go",
-     "start": 120.344,
-     "end": 121.013,
+     "start": 122.228,
+     "end": 122.897,
      "conf": 0.319
     }
    ]
   },
   {
    "text": "Twenty-four words the internet will never know",
-   "start": 121.033,
-   "end": 124.672,
+   "start": 122.917,
+   "end": 126.556,
    "words": [
     {
      "w": "Twenty-four",
-     "start": 121.033,
-     "end": 121.535,
+     "start": 122.917,
+     "end": 123.419,
      "conf": 0.253
     },
     {
      "w": "words",
-     "start": 121.555,
-     "end": 121.997,
+     "start": 123.439,
+     "end": 123.881,
      "conf": 0.391
     },
     {
      "w": "the",
-     "start": 122.017,
-     "end": 122.419,
+     "start": 123.901,
+     "end": 124.303,
      "conf": 0.29
     },
     {
      "w": "internet",
-     "start": 122.439,
-     "end": 123.07,
+     "start": 124.323,
+     "end": 124.954,
      "conf": 0.368
     },
     {
      "w": "will",
-     "start": 123.142,
-     "end": 123.403,
+     "start": 125.026,
+     "end": 125.287,
      "conf": 0.899
     },
     {
      "w": "never",
-     "start": 123.423,
-     "end": 123.966,
+     "start": 125.307,
+     "end": 125.85,
      "conf": 0.486
     },
     {
      "w": "know",
-     "start": 123.986,
-     "end": 124.672,
+     "start": 125.87,
+     "end": 126.556,
      "conf": 0.167
     }
    ]
   },
   {
    "text": "Open source, read every line",
-   "start": 124.692,
-   "end": 127.861,
+   "start": 126.576,
+   "end": 129.745,
    "words": [
     {
      "w": "Open",
-     "start": 124.692,
-     "end": 125.233,
+     "start": 126.576,
+     "end": 127.117,
      "conf": 0.486
     },
     {
      "w": "source,",
-     "start": 125.253,
-     "end": 125.79,
+     "start": 127.137,
+     "end": 127.674,
      "conf": 0.346
     },
     {
      "w": "read",
-     "start": 125.975,
-     "end": 126.617,
+     "start": 127.859,
+     "end": 128.501,
      "conf": 0.427
     },
     {
      "w": "every",
-     "start": 126.637,
-     "end": 126.938,
+     "start": 128.521,
+     "end": 128.822,
      "conf": 0.051
     },
     {
      "w": "line",
-     "start": 126.958,
-     "end": 127.861,
+     "start": 128.842,
+     "end": 129.745,
      "conf": 0.379
     }
    ]
   },
   {
    "text": "One key (OneKey), all yours",
-   "start": 127.881,
-   "end": 130.856,
+   "start": 129.765,
+   "end": 132.74,
    "words": [
     {
      "w": "One",
-     "start": 127.881,
-     "end": 128.022,
+     "start": 129.765,
+     "end": 129.906,
      "conf": 0.422
     },
     {
      "w": "key",
-     "start": 128.042,
-     "end": 128.804,
+     "start": 129.926,
+     "end": 130.688,
      "conf": 0.074
     },
     {
      "w": "(OneKey),",
-     "start": 128.824,
-     "end": 129.767,
+     "start": 130.708,
+     "end": 131.651,
      "conf": 0.308
     },
     {
      "w": "all",
-     "start": 129.787,
-     "end": 130.008,
+     "start": 131.671,
+     "end": 131.892,
      "conf": 0.595
     },
     {
      "w": "yours",
-     "start": 130.028,
-     "end": 130.856,
+     "start": 131.912,
+     "end": 132.74,
      "conf": 0.621
     }
    ]
   },
   {
    "text": "Hold it, sign it, go",
-   "start": 130.876,
-   "end": 132.79,
+   "start": 132.76,
+   "end": 134.674,
    "words": [
     {
      "w": "Hold",
-     "start": 130.876,
-     "end": 131.239,
+     "start": 132.76,
+     "end": 133.123,
      "conf": 0.326
     },
     {
      "w": "it,",
-     "start": 131.259,
-     "end": 131.34,
+     "start": 133.143,
+     "end": 133.224,
      "conf": 0.016
     },
     {
      "w": "sign",
-     "start": 131.36,
-     "end": 131.723,
+     "start": 133.244,
+     "end": 133.607,
      "conf": 0.344
     },
     {
      "w": "it,",
-     "start": 131.743,
-     "end": 131.824,
+     "start": 133.627,
+     "end": 133.708,
      "conf": 0.045
     },
     {
      "w": "go",
-     "start": 131.844,
-     "end": 132.79,
+     "start": 133.728,
+     "end": 134.674,
      "conf": 0.735
     }
    ]
   },
   {
    "text": "OneKey Pro 2",
-   "start": 141.455,
-   "end": 143.265,
+   "start": 143.339,
+   "end": 145.149,
    "words": [
     {
      "w": "OneKey",
-     "start": 141.455,
-     "end": 142.085,
+     "start": 143.339,
+     "end": 143.969,
      "conf": 0.341
     },
     {
      "w": "Pro",
-     "start": 142.138,
-     "end": 142.6,
+     "start": 144.022,
+     "end": 144.484,
      "conf": 0.494
     },
     {
      "w": "2",
-     "start": 142.62,
-     "end": 143.265,
+     "start": 144.504,
+     "end": 145.149,
      "conf": 0.327
     }
    ]
