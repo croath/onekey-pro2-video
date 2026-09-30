@@ -31,7 +31,6 @@ export function makeTimeline(ly: Lyrics, au: AudioData): TimelineEntry[] {
   const E = (id: string, file: string, start: number, end: number, extra: Partial<TimelineEntry> = {}): TimelineEntry =>
     ({ id, load: scene(file), start, end, ...extra });
 
-  if (typeof location !== 'undefined' && location.search.includes('only=devtest')) return [E('devtest', 'devtest', 0, 8)]; // SCRATCH
   return [
     E('boot', 'boot', 0, cut('Glass on the front')),
     E('slab', 'slab', cut('Glass on the front'), cut('Quiet by design')),
