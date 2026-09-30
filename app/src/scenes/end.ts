@@ -54,7 +54,7 @@ export default class End extends Scene {
     const db = audio.downbeats.filter((d) => d >= t0 - 0.01 && d < name);
     let sweep = 9;
     for (const d of db) if (t >= d && t < d + 1.2) sweep = lerp(1.6, -1.6, prog(t, d, d + 1.2, ease.inOutQuad));
-    const fadeIn = prog(t, t0, t0 + 0.6, ease.outCubic);
+    const fadeIn = 1; // hook2 hands over this exact pose, lit: no fade from black
     const lightsDown = 1 - prog(t, drop, last, ease.inOutQuad) * 0.75 - prog(t, last, last + 0.25) * 0.25;
     const wake = prog(t, words[0]!.start - 0.25, words[0]!.start + 0.15, ease.outCubic);
     const screenOff = t >= last;
