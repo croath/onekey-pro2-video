@@ -15,6 +15,7 @@
 import * as THREE from 'three';
 import { FSPass, Layer2D, W, H, SS_TAP, SS_TAP_GLSL, makeRT, clearRT } from '../engine/gl';
 import { DEVICE, KEY } from './_motifs';
+import { BOARD, SE_H, LidAtlas, boardGLSL, boardTexture, paintBattery, paintBoard, passTexture } from './_board';
 
 export type V3 = [number, number, number];
 export type DevicePose = {
@@ -36,6 +37,8 @@ export type DevicePose = {
   show?: [number, number, number, number, number, number];
   /** Glow of each of the four secure elements, 0..1. */
   se?: [number, number, number, number];
+  /** Extra z offset of each part (device units), on top of `explode` (staggered, overshooting separations). */
+  offs?: [number, number, number, number, number, number];
   /** Overall brightness. */
   gain?: number;
 };
@@ -71,6 +74,10 @@ uniform float fov, devScale, sweep, glint, screenOn, explode, lift, gain;
 uniform float show[6];
 uniform vec4 se;
 uniform sampler2D screenTex;
+#ifdef PARTS
+uniform sampler2D boardTex, passTex, lidTex, batTex;
+uniform float pOff[6];
+#endif
 
 const vec2 HALF = vec2(${f4(D.w / 2)}, ${f4(D.h / 2)});
 const float TH = ${f4(TH)}, CORNER = ${f4(D.corner)}, RE = 0.046;
@@ -93,24 +100,54 @@ float sdPlate(vec3 p, vec2 hs, float corner, float th, float re) {
 }
 
 #ifdef PARTS
+${boardGLSL(f4)}
 // ---- parts (ids: 0 cover, 1 display, 2 board, 3 chip, 4 battery, 5 frame, 6 back, 9 whole device)
-float zOff(int i) { return EZ[i] * explode + (i < 2 ? lift : 0.0); }
+float zOff(int i) { return (i == 0 ? ${f4(EXPLODE_Z[0]!)} : i == 1 ? ${f4(EXPLODE_Z[1]!)} : i == 2 ? ${f4(EXPLODE_Z[2]!)} : i == 3 ? ${f4(EXPLODE_Z[3]!)} : i == 4 ? ${f4(EXPLODE_Z[4]!)} : ${f4(EXPLODE_Z[5]!)}) * explode + (i < 2 ? lift : 0.0) + pOff[i]; }
+// the display's flex: a U-bend round the display's bottom edge and a tail back under it to its connector
+const float FLX = -0.2, FLR = 0.0055, FLT = 0.0011, FLW = 0.058;
+float sdFlex(vec3 p) {
+  float yc = -SHALF.y - 0.006, zc = TH - 0.018 + zOff(1) - 0.006 - FLT - FLR;
+  vec3 f = p - vec3(FLX, yc, zc);
+  float arc = max(abs(length(f.yz) - FLR) - FLT, f.y);
+  float top = sdBox(f.yz - vec2(0.02, FLR), vec2(0.02, FLT));
+  float L = 0.29;
+  float bot = sdBox(f.yz - vec2(L * 0.5, -FLR), vec2(L * 0.5, FLT));
+  float d = max(min(arc, min(top, bot)), abs(f.x) - FLW);
+  // the board-to-board plug at its end
+  return min(d, sdBox3(f - vec3(0.0, L - 0.02, -FLR - 0.0045), vec3(FLW + 0.008, 0.022, 0.0035)) - 0.001);
+}
 vec2 mapParts(vec3 p, bool noCover) {
   vec2 r = vec2(1e3, -1.0);
   float d;
   if (show[0] > 0.5 && !noCover) { d = sdPlate(p - vec3(0, 0, TH - 0.006 + zOff(0)), HALF - 0.004, CORNER - 0.004, 0.006, 0.005); if (d < r.x) r = vec2(d, 0.0); }
-  if (show[1] > 0.5) { d = sdPlate(p - vec3(0, 0, TH - 0.018 + zOff(1)), SHALF + 0.008, SCORNER + 0.008, 0.006, 0.003); if (d < r.x) r = vec2(d, 1.0); }
+  if (show[1] > 0.5) {
+    d = sdPlate(p - vec3(0, 0, TH - 0.018 + zOff(1)), SHALF + 0.008, SCORNER + 0.008, 0.006, 0.003); if (d < r.x) r = vec2(d, 1.0);
+    d = sdFlex(p); if (d < r.x) r = vec2(d, 8.0);
+  }
   if (show[2] > 0.5) {
-    vec3 q = p - vec3(0, 0.02, 0.006 + zOff(2));
-    d = sdPlate(q, vec2(0.43, 0.7), 0.12, 0.005, 0.002); if (d < r.x) r = vec2(d, 2.0);
-    // chips on the top face: four secure elements, the processor, and a few passives
-    float c = 1e3;
-    for (int i = 0; i < 4; i++) c = min(c, sdBox3(q - vec3(SEP[i], 0.011), vec3(SEH, SEH, 0.006)) - 0.002);
-    c = min(c, sdBox3(q - vec3(0.12, 0.3, 0.012), vec3(0.11, 0.11, 0.007)) - 0.003);
-    c = min(c, sdBox3(q - vec3(-0.22, 0.3, 0.01), vec3(0.08, 0.05, 0.005)) - 0.002);
-    c = min(c, sdBox3(q - vec3(-0.18, -0.42, 0.009), vec3(0.14, 0.035, 0.004)) - 0.002);
-    c = min(c, sdBox3(q - vec3(0.2, -0.42, 0.009), vec3(0.06, 0.06, 0.004)) - 0.002);
+    vec3 q = p - vec3(0, BCY, 0.006 + zOff(2));
+    d = sdPlate(q, BH, BCORNER, BTH, 0.0015);
+    d = max(d, holesSDF(q.xy));
+    if (d < r.x) r = vec2(d, 2.0);
+    float qz = q.z - BTH;
+    if (qz < BHMAX + 0.004 && abs(q.x) < BH.x + 0.01 && abs(q.y) < BH.y + 0.01) {
+    // the packages (boxes with rounded edges) and the stamped fence round the secure zone
+    float c = chipsSDF(q.xy, qz);
+    float fw = abs(sdRoundRect(q.xy - FEN.xy, FEN.zw, FEN2.x)) - FEN2.y;
+    c = min(c, max(fw, abs(qz - FEN2.z * 0.5) - FEN2.z * 0.5));
     if (c < r.x) r = vec2(c, 3.0);
+    // passives: one box per grid cell, looked up in the layout texture; bounded by the cell's walls
+    vec2 g = (q.xy + BH) / PCELL;
+    vec4 pc = texelFetch(passTex, clamp(ivec2(floor(g)), ivec2(0), PGRID - 1), 0);
+    int ty = int(pc.x * 255.0 + 0.5);
+    vec2 lc = (fract(g) - 0.5) * PCELL - (pc.yz - 0.5) * 0.01;
+    if (pc.w > 0.5) lc = lc.yx;
+    vec3 hs = ptSize(ty);
+    float dpb = ty > 0 ? sdBox3(vec3(lc, qz - hs.z), hs - 0.0007) - 0.0007 : 1e3;
+    vec2 cw = (0.5 - abs(fract(g) - 0.5)) * PCELL;
+    float dp = max(qz - 0.0075, min(dpb, min(cw.x, cw.y) + 0.003));
+    if (dp < r.x) r = vec2(dp, 7.0);
+    }
   }
   if (show[3] > 0.5) { d = sdPlate(p - vec3(0, -0.06, -0.018 + zOff(3)), vec2(0.4, 0.5), 0.06, 0.016, 0.01); if (d < r.x) r = vec2(d, 4.0); }
   if (show[4] > 0.5) {
@@ -260,42 +297,134 @@ vec3 matBand(vec3 p, vec3 r, float fres) {
   return col;
 }
 #ifdef PARTS
-vec3 matBoard(vec3 p, vec3 n, vec3 r, float fres) {
-  vec3 q = p - vec3(0, 0.02, 0);
-  vec3 col = mix(C_INK, C_BLOOD, 0.05) * 0.5 + envRough(r, 1.2) * 0.006;
-  if (n.z > 0.7) {
-    // routed traces: short straight runs on a fine grid, and a few vias
-    vec2 g = q.xy * 44.0, cell = floor(g), f = fract(g) - 0.5;
-    float h = hash12(cell + 7.0), w = fwidth(g.x) + 1e-4;
-    float tr = h < 0.3 ? abs(f.y) : h < 0.5 ? abs(f.x) : 1.0;
-    float line = 1.0 - smoothstep(0.04, 0.04 + w, tr);
-    float via = h > 0.93 ? 1.0 - smoothstep(0.12, 0.12 + w, length(f)) : 0.0;
-    col += C_GRAPHITE * 0.14 * max(line, via);
+// ---- the main board. Materials: near-black satin solder mask over copper (the pour and the traces
+// lift it slightly and their edges catch the light), ENIG gold pads, white silkscreen hairlines; the
+// fine detail comes from the painted map (boardTex), bumped from its own gradient.
+const vec3 GOLD = vec3(1.0, 0.66, 0.3);
+float boardTop() { return 0.006 + zOff(2) + BTH; }
+float seGlow(int i) { return i == 0 ? se.x : i == 1 ? se.y : i == 2 ? se.z : se.w; }
+vec3 toWorldN(vec3 n) { return normalize(transpose(devRot) * n); }
+vec3 matBoard(vec3 p, vec3 n, vec3 nw, vec3 rd, float fres) {
+  vec3 q = p - vec3(0, BCY, 0);
+  if (n.z < 0.7) {
+    // the board's edge: FR-4 layers, dark with a faint copper line
+    vec3 r = reflect(rd, nw);
+    return vec3(0.02, 0.019, 0.013) * (0.4 + envRough(nw, 0.3) * 0.5) + envRough(r, 1.2) * 0.02;
+  }
+  vec2 uv = (q.xy + BH) / (2.0 * BH);
+  vec4 T = texture(boardTex, uv);
+  // bump from the copper (and the silkscreen's ink) under the mask
+  vec2 e = max(fwidth(uv) * 0.75, BTEXEL);
+  float h0 = T.r * 0.8 + T.b * 0.25;
+  float hx = dot(texture(boardTex, uv + vec2(e.x, 0.0)).rb, vec2(0.8, 0.25));
+  float hy = dot(texture(boardTex, uv + vec2(0.0, e.y)).rb, vec2(0.8, 0.25));
+  vec2 grad = vec2(hx - h0, hy - h0) / (e * 2.0 * BH) * 0.0007;
+  grad = grad / max(1.0, length(grad) / 1.2);
+  vec3 nb = toWorldN(normalize(vec3(-grad, 1.0)));
+  vec3 rb = reflect(rd, nb);
+  // contact shadow under the packages and the fence
+  float ao = chipsAO(q.xy);
+  float fd = max(abs(sdRoundRect(q.xy - FEN.xy, FEN.zw, FEN2.x)) - FEN2.y, 0.0);
+  ao *= 1.0 - 0.5 * exp(-fd / 0.005);
+  vec3 mask = mix(vec3(0.0068, 0.0076, 0.0074), vec3(0.02, 0.018, 0.0145), T.r);
+  vec3 dif = envRough(nb, 0.35) * 0.55 + 0.06;
+  vec3 col = mask * dif * ao;
+  col += (envRough(rb, 2.4) * (0.03 + 0.03 * T.r) + env(rb) * (0.016 + 0.3 * fres)) * mix(0.5, 1.0, ao);
+  vec3 gold = GOLD * (env(rb) * 0.3 + envRough(rb, 1.3) * 0.34 + 0.012) * mix(0.4, 1.0, ao);
+  vec3 silk = vec3(0.6, 0.62, 0.58) * (envRough(nb, 0.35) * 0.3 + 0.035) * ao + envRough(rb, 1.6) * 0.03;
+  col = mix(col, silk, T.b * (1.0 - T.g));
+  col = mix(col, gold, T.g);
+  // the secure elements' light, spilling onto the board and catching their pads
+${SE_POS.map(([x, y], i) => `  { float dd = max(sdRoundRect(q.xy - ${v2(x, y)}, vec2(SEH), 0.004), 0.0);
+    col += C_SIGNAL * se[${i}] * (0.016 * exp(-dd * 80.0) + 0.004 * exp(-dd * 14.0) + T.g * 0.4 * exp(-dd * 160.0)); }`).join('\n')}
+  return col;
+}
+vec3 matChip(vec3 p, vec3 n, vec3 nw, vec3 r, float fres, float px) {
+  vec3 q = p - vec3(0, BCY, 0);
+  float qz = p.z - boardTop();
+  float bd;
+  vec4 a, b;
+  chipAt(q.xy, qz, a, b, bd);
+  int kind = int(b.y + 0.5);
+  float fd = max(abs(sdRoundRect(q.xy - FEN.xy, FEN.zw, FEN2.x)) - FEN2.y, abs(qz - FEN2.z * 0.5) - FEN2.z * 0.5);
+  if (fd < bd || kind == 3) {
+    // stamped nickel silver: a bright satin metal with a fine grain along its length
+    float gr = hash12(floor(p.xy * vec2(6000.0, 300.0))) - 0.5;
+    vec3 tint = vec3(0.72, 0.73, 0.71);
+    return tint * (env(r) * 0.42 + envRough(r, 1.4) * 0.3 + envRough(nw, 0.3) * 0.04) * (1.0 + 0.08 * gr);
+  }
+  vec2 uv = (q.xy - a.xy) / (2.0 * a.zw) + 0.5;
+  if (kind == 2) {
+    // BGA substrate: dark laminate with a satin top
+    return vec3(0.02, 0.018, 0.011) * (envRough(nw, 0.35) * 0.6 + 0.1) + envRough(r, 2.0) * 0.04 + env(r) * 0.03 * fres;
+  }
+  float cell = b.z;
+  vec2 cr = vec2(mod(cell, LIDG.x), floor(cell / LIDG.x));
+  vec4 M = texture(lidTex, vec2((cr.x + clamp(uv.x, 0.0, 1.0)) / LIDG.x, (LIDG.y - 1.0 - cr.y + clamp(uv.y, 0.0, 1.0)) / LIDG.y));
+  float top = smoothstep(0.6, 0.9, n.z);
+  if (kind == 4) {
+    // connector: black LCP housing, gold contacts along its top
+    vec3 pl = vec3(0.012) * (envRough(nw, 0.35) * 0.6 + 0.08) + envRough(r, 1.8) * 0.035;
+    vec3 au = GOLD * (env(r) * 0.3 + envRough(r, 1.3) * 0.35);
+    return mix(pl, au, M.r * top);
+  }
+  // mould compound: semi-gloss black lid, laser marking (matte, lighter), and for a secure element the
+  // die's green light coming through the marking and round the lid's edge
+  vec3 lid = vec3(0.0105, 0.011, 0.0115) * (envRough(nw, 0.35) * 0.5 + 0.1) + envRough(r, 2.6) * 0.075 + env(r) * (0.035 + 0.5 * fres);
+  vec3 etch = vec3(0.07, 0.072, 0.07) * (envRough(nw, 0.35) * 0.7 + 0.12) + envRough(r, 1.2) * 0.018;
+  vec3 col = mix(lid, etch, M.r * top);
+  float side = 1.0 - top;
+  // tin leads peeking out along the bottom of the package sides (QFN)
+  if (kind != 2) {
+    float along = abs(n.x) > abs(n.y) ? q.y : q.x;
+    float lead = step(fract(along / 0.0094), 0.32) * step(qz, 0.0022) * side;
+    col = mix(col, vec3(0.7) * (env(r) * 0.4 + envRough(r, 1.2) * 0.3), lead);
+  }
+  if (kind == 0) {
+    float g = seGlow(int(cell + 0.5));
+    float edge = 1.0 - smoothstep(0.0, 0.01, min(a.z - abs(q.x - a.x), a.w - abs(q.y - a.y)));
+    col += C_SIGNAL * g * (M.g * top * 1.6 + edge * top * 0.12 + side * 0.035);
   }
   return col;
 }
-vec3 matChip(vec3 p, vec3 n, vec3 r, float fres, float px) {
-  vec3 q = p - vec3(0, 0.02, 0);
-  vec3 col = C_INK * 0.35 + envRough(r, 1.6) * 0.12 + env(r) * 0.12 * fres;
-  for (int i = 0; i < 4; i++) {
-    vec2 d = q.xy - SEP[i];
-    if (max(abs(d.x), abs(d.y)) < SEH + 0.004) {
-      float g = se[i];
-      // the laser-etched pin-1 dot and a green glow from the die when it lights
-      float dot1 = 1.0 - smoothstep(0.006 - px, 0.006 + px, length(d - vec2(-SEH * 0.62, SEH * 0.62)));
-      col += C_GRAPHITE * 0.25 * dot1;
-      // a lit die: a soft green core under the lid and a green rim where the lid meets the sides
-      float rim = 1.0 - smoothstep(0.0, 0.012, SEH - max(abs(d.x), abs(d.y)));
-      if (n.z > 0.7) col += C_SIGNAL * g * (0.02 + 0.2 * exp(-dot(d, d) * 1400.0) + 1.1 * rim);
-      else col += C_SIGNAL * g * 0.15;
-    }
-  }
-  return col;
+// passives: tan ceramic capacitors, black-topped resistors, bright tinned end caps
+vec3 matPassive(vec3 p, vec3 n, vec3 nw, vec3 r, float fres) {
+  vec3 q = p - vec3(0, BCY, 0);
+  vec2 g = (q.xy + BH) / PCELL;
+  vec4 pc = texelFetch(passTex, clamp(ivec2(floor(g)), ivec2(0), PGRID - 1), 0);
+  int ty = int(pc.x * 255.0 + 0.5);
+  vec2 lc = (fract(g) - 0.5) * PCELL - (pc.yz - 0.5) * 0.01;
+  if (pc.w > 0.5) lc = lc.yx;
+  vec3 hs = ptSize(ty);
+  bool cap = ty == 1 || ty == 3;
+  vec3 body = cap ? vec3(0.1, 0.075, 0.045) : (n.z > 0.7 ? vec3(0.008) : vec3(0.3, 0.3, 0.28));
+  vec3 col = body * (envRough(nw, 0.4) * 0.6 + 0.06) + envRough(r, 1.6) * (cap ? 0.02 : 0.04);
+  float end = step(hs.x * 0.56, abs(lc.x));
+  vec3 tin = vec3(0.75, 0.76, 0.74) * (env(r) * 0.35 + envRough(r, 1.0) * 0.35 + 0.01);
+  return mix(col, tin, end);
 }
-vec3 matBattery(vec3 p, vec3 n, vec3 r, float fres) {
-  vec3 col = C_GRAPHITE * 0.12 + envRough(r, 0.9) * 0.14 + env(r) * 0.2 * fres;
-  if (n.z < -0.7 || n.z > 0.7) col += C_GRAPHITE * 0.05 * step(abs(p.y + 0.3), 0.03) * step(abs(p.x), 0.25);
-  return col;
+vec3 matBattery(vec3 p, vec3 n, vec3 nw, vec3 r, float fres) {
+  // an aluminium-laminate pouch (satin), a black label film printed in white, a sealed flange
+  vec3 pouch = vec3(0.5, 0.51, 0.5) * (envRough(r, 0.9) * 0.3 + envRough(nw, 0.3) * 0.08 + 0.01) + env(r) * 0.08 * fres;
+  if (n.z < 0.7) return pouch;
+  vec2 uv = (p.xy - vec2(0.0, -0.06)) / vec2(0.8, 1.0) + 0.5;
+  vec4 B = texture(batTex, uv);
+  vec3 film = vec3(0.008) * (envRough(nw, 0.35) * 0.5 + 0.1) + envRough(r, 2.4) * 0.05 + env(r) * (0.03 + 0.4 * fres);
+  vec3 ink = vec3(0.5, 0.52, 0.5) * (envRough(nw, 0.35) * 0.35 + 0.05) + envRough(r, 2.0) * 0.03;
+  return mix(pouch, mix(film, ink, B.r), B.g);
+}
+vec3 matFlex(vec3 p, vec3 n, vec3 nw, vec3 r, float fres) {
+  // amber polyimide over fine copper lines, glossy; the plug at its end is black
+  float plug = step(p.z, TH - 0.018 + zOff(1) - 0.006 - 2.0 * FLT - 2.0 * FLR - 0.001);
+  float ln = step(0.55, fract((p.x - FLX) / 0.0042));
+  vec3 pi = mix(vec3(0.13, 0.05, 0.008), vec3(0.3, 0.14, 0.03), ln) * (envRough(nw, 0.35) * 0.6 + 0.08) + env(r) * (0.06 + 0.4 * fres) + envRough(r, 2.0) * 0.04;
+  vec3 pl = vec3(0.012) * (envRough(nw, 0.35) * 0.6 + 0.08) + envRough(r, 1.8) * 0.035;
+  return mix(pi, pl, plug);
+}
+vec3 matDisplay(vec3 p, vec3 n, vec3 r, float fres) {
+  // the panel: black glass on top (the screen, off), a thin steel frame round its sides
+  if (n.z > 0.8) return matScreen(p, r, fres) + env(r) * (0.05 + 0.3 * fres);
+  return vec3(0.6, 0.61, 0.6) * (env(r) * 0.22 + envRough(r, 1.2) * 0.12);
 }
 #endif
 vec3 matCover(vec3 r, float fres) { return env(r) * mix(0.06, 1.0, fres); }
@@ -318,11 +447,13 @@ vec4 shade(vec3 pw, vec3 rd, float id, bool noCover) {
     return vec4(mix(band, face, wf + wb), 1.0);
   }
 #ifdef PARTS
-  if (id < 1.5) return vec4(n.z > 0.8 ? matScreen(p, r, fres) + env(r) * 0.05 : C_INK * 0.3 + env(r) * 0.2 * fres, 1.0);
-  if (id < 2.5) return vec4(matBoard(p, n, r, fres), 1.0);
-  if (id < 3.5) return vec4(matChip(p, n, r, fres, px), 1.0);
-  if (id < 4.5) return vec4(matBattery(p, n, r, fres), 1.0);
+  if (id < 1.5) return vec4(matDisplay(p, n, r, fres), 1.0);
+  if (id < 2.5) return vec4(matBoard(p, n, nw, rd, fres), 1.0);
+  if (id < 3.5) return vec4(matChip(p, n, nw, r, fres, px), 1.0);
+  if (id < 4.5) return vec4(matBattery(p, n, nw, r, fres), 1.0);
   if (id < 5.5) return vec4(matBand(p, r, fres), 1.0);
+  if (id > 6.5 && id < 7.5) return vec4(matPassive(p, n, nw, r, fres), 1.0);
+  if (id > 7.5) return vec4(matFlex(p, n, nw, r, fres), 1.0);
   if (n.z < -0.8) return vec4(matBack(p, nw, r, fres, px), 1.0);
   return vec4(matFrosted(p, nw, r, fres) * 0.5, 1.0);
 #else
@@ -421,13 +552,27 @@ export class Device3D {
     devRot: { value: new THREE.Matrix3() }, fov: { value: 0.6 }, devScale: { value: 1 }, sweep: { value: 9 }, glint: { value: 0 },
     screenOn: { value: 0 }, explode: { value: 0 }, lift: { value: 0 }, gain: { value: 1 }, show: { value: [1, 1, 1, 1, 1, 1] },
     se: { value: new THREE.Vector4() }, screenTex: { value: null },
+    boardTex: { value: null }, passTex: { value: null }, lidTex: { value: null }, batTex: { value: null }, pOff: { value: [0, 0, 0, 0, 0, 0] },
   };
+  private _lids: LidAtlas | null = null;
+  /** The package lids' laser markings (cells 0–3: the secure elements); draw with `lids.draw(i, fn)`. */
+  get lids() { return (this._lids ??= new LidAtlas()); }
   // two builds of the shader: the whole device, and (only when exploded) its parts. The software GPU
   // runs every branch of a shader, so the solid build leaves the parts out entirely.
   private solid: FSPass | null = null;
   private parts: FSPass | null = null;
   pass(explode: boolean) {
-    if (explode) return (this.parts ??= new FSPass(FRAG(true), this.uniforms));
+    if (explode) {
+      if (!this.parts) {
+        // the board's painted material map, the passives layout and the battery label: built once
+        const u = this.uniforms;
+        u.boardTex!.value = boardTexture(paintBoard());
+        u.passTex!.value = passTexture();
+        u.batTex!.value = paintBattery();
+        this.parts = new FSPass(FRAG(true), this.uniforms);
+      }
+      return this.parts;
+    }
     return (this.solid ??= new FSPass(FRAG(false), this.uniforms));
   }
 
@@ -449,6 +594,8 @@ export class Device3D {
     u.gain!.value = p.gain ?? 1;
     u.show!.value = p.show ?? [1, 1, 1, 1, 1, 1];
     (u.se!.value as THREE.Vector4).set(...(p.se ?? [0, 0, 0, 0]));
+    u.pOff!.value = p.offs ?? [0, 0, 0, 0, 0, 0];
+    if ((p.explode ?? 0) > 0) u.lidTex!.value = this.lids.upload();
     if (uploadScreen) u.screenTex!.value = this.screen.upload();
     else if (!u.screenTex!.value) u.screenTex!.value = this.screen.texture;
     clearRT(renderer, this.rt, [0, 0, 0], 0);
@@ -501,4 +648,13 @@ export function mapQuad(c: CanvasRenderingContext2D, dev: Device3D, pose: Device
 /** A camera orbiting `tgt` at distance `dist`: yaw about y (0 = looking at the display), pitch up. */
 export function orbit(tgt: V3, dist: number, yaw: number, pitch: number): V3 {
   return [tgt[0] + Math.sin(yaw) * Math.cos(pitch) * dist, tgt[1] + Math.sin(pitch) * dist, tgt[2] + Math.cos(yaw) * Math.cos(pitch) * dist];
+}
+
+/** Device z of the main board's top face under a pose (see PART_Z / EXPLODE_Z; the board is part 2). */
+export function boardTopZ(p: DevicePose): number {
+  return 0.006 + EXPLODE_Z[2]! * (p.explode ?? 0) + (p.offs?.[2] ?? 0) + BOARD.th;
+}
+/** Device-space centre of secure element i's lid (its top face) under a pose. */
+export function seLid(p: DevicePose, i: number, dx = 0, dy = 0): V3 {
+  return [SE_POS[i]![0] + dx, SE_POS[i]![1] + BOARD.cy + dy, boardTopZ(p) + SE_H];
 }

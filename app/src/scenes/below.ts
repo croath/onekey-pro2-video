@@ -17,6 +17,7 @@ import type { Line } from '../engine/lyrics';
 import { Lyrics } from '../engine/lyrics';
 import { clamp, ease, lerp, prog } from '../engine/util';
 import { DEVICE, keyHead2D, lyricLine } from './_motifs';
+import { quiet } from './below-quiet';
 import { Device3D, EXPLODE_Z, PART_Z, SE_POS, orbit, outline, type DevicePose, type V3 } from './_device3d';
 
 const PARTS = ['cover glass', 'display', 'main board', 'battery', 'frame', 'back glass'];
@@ -57,45 +58,8 @@ export default class Below extends Scene {
     comp.draw(renderer, this.bg.upload(), out, { mode: 'replace' });
 
     if (t < cB) {
-      // ---------------------------------------------------------------- the front, screen off
-      const k = prog(t, this.ctx.start, cB);
-      const T: V3 = [0, 0.05, 0];
-      const pose: DevicePose = { cam: orbit(T, lerp(4.3, 4.0, k), lerp(0.34, 0.12, ease.inOutQuad(k)), 0.1), tgt: T, fov: 0.6, rot: [0, 0, 0], sweep: lerp(-1.4, 1.4, k) };
-      comp.draw(renderer, this.dev.render(renderer, pose), out);
-      // the boundary: a white hairline traces the outline from "Quiet" to "show"
-      const w0 = l1.words[0]!, wEnd = l1.words[l1.words.length - 1]!;
-      const kk = prog(t, w0.start, wEnd.end, ease.inOutCubic);
-      const pts = this.outl.map((q) => this.dev.project(pose, q));
-      if (kk > 0) {
-        const n = Math.floor(kk * pts.length);
-        c.strokeStyle = rgba('bone', 0.95);
-        c.lineWidth = 1.6;
-        c.beginPath();
-        // start at the top centre, clockwise on screen
-        const i0 = Math.floor(pts.length * 0.125);
-        for (let j = 0; j <= n && j <= pts.length; j++) {
-          const p = pts[(i0 - j + pts.length * 4) % pts.length]!;
-          if (j === 0) c.moveTo(p.x, p.y); else c.lineTo(p.x, p.y);
-        }
-        c.stroke();
-      }
-      // callout on "edges": from the right edge
-      const edges = l1.words.find((w) => w.w.startsWith('edges'))!;
-      const kc = prog(t, edges.start - 0.05, edges.start + 0.4, ease.outExpo);
-      if (kc > 0) {
-        const a = this.dev.project(pose, [DEVICE.w / 2 + 0.01, 0.3, 0]);
-        const bx = a.x + lerp(0, 160, kc);
-        c.strokeStyle = rgba('bone', 0.8);
-        c.lineWidth = 1.2;
-        c.beginPath(); c.moveTo(a.x + 8, a.y); c.lineTo(bx, a.y); c.stroke();
-        c.fillStyle = rgba('bone', 0.9 * kc);
-        c.beginPath(); c.arc(a.x, a.y, 3, 0, Math.PI * 2); c.fill();
-        c.font = font(F.mono(400), 24);
-        c.fillText('boundary', bx + 14, a.y + 8);
-      }
-      lyricLine(c, l1, t, 120, H - 110, { family: F.archivo(100, 800), size: 72, on: rgba('bone'), off: rgba('bone', 0.3) });
-      comp.draw(renderer, this.text.upload(), out);
-      return { bloom: 0.45, vignette: 0.4 };
+      // ---------------------------------------------------------------- the front, screen off: below-quiet.ts
+      return quiet({ dev: this.dev, bg: this.bg, text: this.text, renderer, comp, start: this.ctx.start }, f, out, l1, cB);
     }
 
     // ---------------------------------------------------------------- exploded, then down to the board
