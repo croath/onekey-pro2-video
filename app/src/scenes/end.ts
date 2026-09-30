@@ -110,7 +110,7 @@ export default class End extends Scene {
       // (PingFang on a Mac, WenQuanYi in the export container)
       c.font = `${font(F.mono(400), 24)}, "PingFang SC", "Hiragino Sans GB", "WenQuanYi Zen Hei", "Noto Sans CJK SC", sans-serif`;
       c.fillStyle = rgba('bone', 0.45);
-      c.fillText('Video by Croath 小鱼 & Claude', x0 + 6, y0 + 190);
+      c.fillText('Video by Croath(小鱼) & Claude', x0 + 6, y0 + 190);
       c.globalAlpha = 1;
     }
     if (screenOff) {
