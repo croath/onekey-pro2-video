@@ -1,0 +1,170 @@
+1
+00:00:12,639 --> 00:00:16,153
+Glass on the front and glass on the back
+正面是玻璃，背面也是玻璃
+
+2
+00:00:16,399 --> 00:00:20,053
+A ribbon of metal, graphite and black
+一圈金属边框，石墨般的黑
+
+3
+00:00:20,359 --> 00:00:23,910
+Thin as a card, it slips out of sight
+薄如卡片，一放就不见踪影
+
+4
+00:00:24,398 --> 00:00:27,636
+One little key mark catching the light
+一枚小小的钥匙标，映着光
+
+5
+00:00:27,636 --> 00:00:33,504
+Quiet by design, no edges to show
+低调是设计，不露一丝棱角
+
+6
+00:00:35,537 --> 00:00:42,714
+Everything that matters stays down below
+真正重要的，都藏在深处
+
+7
+00:00:44,460 --> 00:00:46,240
+Scan it, sign it, send it
+扫码，签名，发送
+
+8
+00:00:46,240 --> 00:00:48,160
+Not a single wire
+一根线都不用
+
+9
+00:00:48,160 --> 00:00:50,000
+Read it before you mean it
+先看清，再确认
+
+10
+00:00:50,000 --> 00:00:52,663
+Every word in plain type
+每个字都明明白白
+
+11
+00:00:52,663 --> 00:00:54,539
+Keep your keys at home
+私钥只留在你身边
+
+12
+00:00:54,539 --> 00:00:56,477
+Only the signatures go
+出门的只有签名
+
+13
+00:00:56,477 --> 00:01:00,575
+Twenty-four words the internet will never know
+二十四个助记词，网络永远无从得知
+
+14
+00:01:00,575 --> 00:01:03,436
+One key (OneKey), all yours
+一把钥匙（OneKey），完全属于你
+
+15
+00:01:03,436 --> 00:01:07,584
+Hold it, sign it, go
+握住它，签下它，出发
+
+16
+00:01:11,253 --> 00:01:14,612
+Four secure elements, EAL six plus
+四颗安全芯片，EAL 6+
+
+17
+00:01:14,612 --> 00:01:18,211
+Bank-card silicon, so you don't have to trust
+银行卡级芯片，无需盲目信任
+
+18
+00:01:18,211 --> 00:01:22,231
+A camera on the back that only reads light
+背面的摄像头只读取光
+
+19
+00:01:22,231 --> 00:01:26,232
+QR in, QR out, and nothing online
+二维码进，二维码出，全程不联网
+
+20
+00:01:26,232 --> 00:01:29,770
+Contract says "approve all"? SignGuard says wait
+合约要你“全部授权”？SignGuard 说：等一下
+
+21
+00:01:29,770 --> 00:01:33,350
+Clear signing in words, not hex on a plate
+用文字清楚签名，而不是一堆十六进制
+
+22
+00:01:33,350 --> 00:01:37,009
+Touch to unlock it, a PIN if you must
+指纹解锁，必要时再用 PIN
+
+23
+00:01:37,009 --> 00:01:41,351
+Too many wrong guesses, it wipes itself to dust
+猜错太多次，它会自毁清空
+
+24
+00:01:41,351 --> 00:01:45,012
+It's not just your coins anymore
+守护的不再只是你的币
+
+25
+00:01:45,012 --> 00:01:48,209
+It's the key to every door
+它是打开每一扇门的钥匙
+
+26
+00:01:48,209 --> 00:01:52,430
+FIDO in your pocket, passkeys, no passwords to type
+口袋里的 FIDO，通行密钥，不必再输密码
+
+27
+00:01:52,430 --> 00:01:57,751
+Tap it once and you're in, no phishing link tonight
+轻点一下即可登录，今晚没有钓鱼链接
+
+28
+00:01:59,036 --> 00:02:00,820
+Keep your keys at home
+私钥只留在你身边
+
+29
+00:02:00,820 --> 00:02:02,817
+Only the signatures go
+出门的只有签名
+
+30
+00:02:02,817 --> 00:02:06,476
+Twenty-four words the internet will never know
+二十四个助记词，网络永远无从得知
+
+31
+00:02:06,476 --> 00:02:09,665
+Open source, read every line
+开源，每一行都可查看
+
+32
+00:02:09,665 --> 00:02:12,660
+One key (OneKey), all yours
+一把钥匙（OneKey），完全属于你
+
+33
+00:02:12,660 --> 00:02:15,074
+Hold it, sign it, go
+握住它，签下它，出发
+
+34
+00:02:23,239 --> 00:02:25,549
+OneKey Pro 2
+OneKey Pro 2
+
