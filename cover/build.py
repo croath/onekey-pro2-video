@@ -2,7 +2,8 @@
 
 1. cd app && bun scripts/render.ts stills --t 137.5,150 --samples 36 --scale 3 --out ../out/cover/hero
 2. analysis/.venv/bin/python cover/build.py      -> out/cover/cover-4k.png, cover-1280.jpg,
-   cover-vertical-4k.png (2160x3840, key content in the centre 3:4 band), cover-vertical-1080.jpg
+   cover-vertical-4k.png (2160x3840, key content in the centre 4:5 band), cover-vertical-1080.jpg,
+   cover-43-4k.png (2880x2160), cover-43-1440.jpg
 """
 import subprocess
 
@@ -45,3 +46,11 @@ subprocess.run([CHROME, '--headless=new', '--hide-scrollbars', '--force-device-s
 v = Image.open(f'{OUT}/cover-vertical-4k.png').convert('RGB')
 print(v.size)
 v.resize((1080, 1920), Image.LANCZOS).save(f'{OUT}/cover-vertical-1080.jpg', quality=92)
+
+# landscape 4:3
+subprocess.run([CHROME, '--headless=new', '--hide-scrollbars', '--force-device-scale-factor=1', '--window-size=2880,2160',
+                '--allow-file-access-from-files', '--virtual-time-budget=4000', f'--screenshot={OUT}/cover-43-4k.png',
+                'file://' + __import__('os').path.abspath('cover/cover-43.html')], check=True)
+q = Image.open(f'{OUT}/cover-43-4k.png').convert('RGB')
+print(q.size)
+q.resize((1440, 1080), Image.LANCZOS).save(f'{OUT}/cover-43-1440.jpg', quality=92)

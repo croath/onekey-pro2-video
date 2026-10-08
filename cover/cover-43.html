@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>OneKey Pro 2 cover 4:3</title>
+<style>
+  @font-face { font-family: Archivo; font-weight: 900; src: url(../app/public/fonts/Archivo-w1000-900.ttf); }
+  @font-face { font-family: Archivo; font-weight: 500; src: url(../app/public/fonts/Archivo-w1000-500.ttf); }
+  @font-face { font-family: Archivo; font-weight: 300; src: url(../app/public/fonts/Archivo-w1000-300.ttf); }
+  :root { --ink: #0A0B0A; --bone: #EEF0EC; --ash: #9A9F9A; --graphite: #5B5F5B; --signal: #44D62C; }
+  html, body { margin: 0; width: 2880px; height: 2160px; overflow: hidden; background: #000; }
+  .stage { position: relative; width: 2880px; height: 2160px; background:
+      radial-gradient(1300px 1200px at 70% 55%, rgba(68, 214, 44, .13), transparent 70%),
+      radial-gradient(2600px 1700px at 70% 45%, #161916 0%, #0A0B0A 55%, #050605 100%); }
+  .dev { position: absolute; mix-blend-mode: screen; }
+  .back { height: 1500px; right: 50px; top: 350px; transform: rotate(3deg); }
+  .front { height: 1100px; left: 1190px; top: 690px; }
+  .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 520px;
+      background: linear-gradient(to top, rgba(0, 0, 0, .75), transparent); }
+  .copy { position: absolute; left: 200px; top: 600px; color: var(--bone); font-family: Archivo, sans-serif; }
+  .kicker { font: 500 44px/1 Archivo; letter-spacing: .34em; text-transform: uppercase; color: var(--signal); }
+  h1 { margin: 70px 0 0; font: 900 236px/0.93 Archivo; letter-spacing: -.012em;
+       text-shadow: 0 0 90px rgba(238, 240, 236, .22); }
+  h1 b { color: var(--signal); text-shadow: 0 0 110px rgba(68, 214, 44, .55); }
+  .sub { margin-top: 52px; font: 500 90px/1 Archivo; color: var(--bone); }
+  .line { margin-top: 70px; width: 200px; height: 6px; background: var(--signal); }
+  .tag { margin-top: 52px; font: 300 64px/1.2 Archivo; color: var(--ash); }
+</style>
+<div class="stage">
+  <img class="dev back" src="../out/cover/back.png">
+  <img class="dev front" src="../out/cover/front.png">
+  <div class="floor"></div>
+  <div class="copy">
+    <div class="kicker">Introducing</div>
+    <h1>OneKey<br>Pro <b>2</b></h1>
+    <div class="sub">Hardware Wallet</div>
+    <div class="line"></div>
+    <div class="tag">Keep your keys at home.</div>
+  </div>
+</div>
