@@ -1,8 +1,12 @@
 # OneKey Pro 2 — intro video
 
+**▶ Watch on YouTube: https://www.youtube.com/watch?v=8cfImSBh-Yk**
+
+[![OneKey Pro 2 — Keep Your Keys at Home](https://img.youtube.com/vi/8cfImSBh-Yk/maxresdefault.jpg)](https://www.youtube.com/watch?v=8cfImSBh-Yk)
+
 A code-rendered product video for OneKey Pro 2. The renderer is adapted from [croath/pdoom-video](https://github.com/croath/pdoom-video) (MIT): every frame is a deterministic function of time, so the live preview and the 1080p60 / 4K60 export are identical.
 
-Status: soundtrack and timings done; plates to build. The concept and plates are in [`docs/TREATMENT.md`](docs/TREATMENT.md); only the starter `title` scene exists so far.
+Status: released (2:38, 4K60). The concept and plates are in [`docs/TREATMENT.md`](docs/TREATMENT.md); subtitles (EN / 中文 / bilingual), title and description are in [`release/`](release/), the covers' source in [`cover/`](cover/).
 
 ## Layout
 
