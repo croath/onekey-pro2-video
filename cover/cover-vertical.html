@@ -1,0 +1,41 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>OneKey Pro 2 vertical cover</title>
+<style>
+  /* 9:16 at 2160x3840. Everything that matters sits inside the centre 4:5 band (y 570-3270, also inside 3:4) so platforms
+     that crop vertical covers to 3:4 or 4:5 keep the title, both devices and the tagline. */
+  @font-face { font-family: Archivo; font-weight: 900; src: url(../app/public/fonts/Archivo-w1000-900.ttf); }
+  @font-face { font-family: Archivo; font-weight: 500; src: url(../app/public/fonts/Archivo-w1000-500.ttf); }
+  @font-face { font-family: Archivo; font-weight: 300; src: url(../app/public/fonts/Archivo-w1000-300.ttf); }
+  :root { --bone: #EEF0EC; --ash: #9A9F9A; --signal: #44D62C; }
+  html, body { margin: 0; width: 2160px; height: 3840px; overflow: hidden; background: #000; }
+  .stage { position: relative; width: 2160px; height: 3840px; background:
+      radial-gradient(1300px 1300px at 55% 66%, rgba(68, 214, 44, .14), transparent 70%),
+      radial-gradient(2000px 2600px at 50% 55%, #161916 0%, #0A0B0A 55%, #050605 100%); }
+  .copy { position: absolute; left: 0; right: 0; top: 730px; text-align: center; color: var(--bone); }
+  .kicker { font: 500 52px/1 Archivo; letter-spacing: .34em; text-transform: uppercase; color: var(--signal);
+            margin-right: -.34em; }
+  h1 { margin: 64px 0 0; font: 900 300px/0.93 Archivo; letter-spacing: -.012em;
+       text-shadow: 0 0 90px rgba(238, 240, 236, .22); }
+  h1 b { color: var(--signal); text-shadow: 0 0 110px rgba(68, 214, 44, .55); }
+  .sub { margin-top: 56px; font: 500 104px/1 Archivo; }
+  .dev { position: absolute; mix-blend-mode: screen; }
+  .back { height: 1480px; left: 1040px; top: 1590px; transform: rotate(3deg); }
+  .front { height: 1140px; left: 300px; top: 1830px; }
+  .foot { position: absolute; left: 0; right: 0; top: 2960px; text-align: center; }
+  .line { margin: 0 auto; width: 180px; height: 6px; background: var(--signal); }
+  .tag { margin-top: 52px; font: 300 78px/1.2 Archivo; color: var(--ash); }
+</style>
+<div class="stage">
+  <img class="dev back" src="../out/cover/back.png">
+  <img class="dev front" src="../out/cover/front.png">
+  <div class="copy">
+    <div class="kicker">Introducing</div>
+    <h1>OneKey<br>Pro <b>2</b></h1>
+    <div class="sub">Hardware Wallet</div>
+  </div>
+  <div class="foot">
+    <div class="line"></div>
+    <div class="tag">Keep your keys at home.</div>
+  </div>
+</div>

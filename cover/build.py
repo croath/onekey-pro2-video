@@ -1,7 +1,8 @@
 """Cover image: engine stills of the device + an HTML layout, exported with headless Chrome.
 
 1. cd app && bun scripts/render.ts stills --t 137.5,150 --samples 36 --scale 3 --out ../out/cover/hero
-2. analysis/.venv/bin/python cover/build.py      -> out/cover/cover-4k.png, cover-1280.jpg
+2. analysis/.venv/bin/python cover/build.py      -> out/cover/cover-4k.png, cover-1280.jpg,
+   cover-vertical-4k.png (2160x3840, key content in the centre 3:4 band), cover-vertical-1080.jpg
 """
 import subprocess
 
@@ -36,3 +37,11 @@ im = Image.open(f'{OUT}/cover-4k.png').convert('RGB')
 print(im.size)
 im.resize((1280, 720), Image.LANCZOS).save(f'{OUT}/cover-1280.jpg', quality=92)
 im.resize((1920, 1080), Image.LANCZOS).save(f'{OUT}/cover-1080.png')
+
+# vertical 9:16
+subprocess.run([CHROME, '--headless=new', '--hide-scrollbars', '--force-device-scale-factor=1', '--window-size=2160,3840',
+                '--allow-file-access-from-files', '--virtual-time-budget=4000', f'--screenshot={OUT}/cover-vertical-4k.png',
+                'file://' + __import__('os').path.abspath('cover/cover-vertical.html')], check=True)
+v = Image.open(f'{OUT}/cover-vertical-4k.png').convert('RGB')
+print(v.size)
+v.resize((1080, 1920), Image.LANCZOS).save(f'{OUT}/cover-vertical-1080.jpg', quality=92)
